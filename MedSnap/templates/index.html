@@ -1,0 +1,2380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedSnap 临床数据智能平台</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #3b82f6;
+            --success: #059669;
+            --success-light: #10b981;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --bg: #f0f4f8;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 24px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+
+
+        /* ===== Navbar ===== */
+        .navbar { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 14px 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+        .navbar-inner { max-width: 1100px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+        .navbar h1 { font-size: 18px; font-weight: 700; }
+        .nav-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .nav-btn { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.25); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+        .nav-btn:hover { background: rgba(255,255,255,0.25); }
+        .record-count { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 13px; }
+
+        /* ===== Main Container ===== */
+        .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+        /* ===== Research Method Tabs ===== */
+        .method-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+        .method-tab { background: var(--card); border: 3px solid var(--border); border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.3s; text-align: center; }
+        .method-tab:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: var(--shadow); }
+        .method-tab.active { border-color: var(--primary); background: linear-gradient(135deg, #eff6ff, #dbeafe); }
+        .method-tab.active.qualitative { border-color: #7c3aed; background: linear-gradient(135deg, #f5f3ff, #ede9fe); }
+        .method-tab.active.quantitative { border-color: #059669; background: linear-gradient(135deg, #ecfdf5, #d1fae5); }
+        .method-tab .tab-icon { font-size: 42px; margin-bottom: 12px; }
+        .method-tab h3 { font-size: 18px; margin-bottom: 6px; }
+        .method-tab p { font-size: 12px; color: var(--text-secondary); }
+
+        /* ===== Module Content ===== */
+        .module-panel { display: none; background: var(--card); border-radius: 16px; padding: 28px; box-shadow: var(--shadow); margin-bottom: 24px; }
+        .module-panel.active { display: block; }
+        .module-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+        .module-header h3 { font-size: 18px; display: flex; align-items: center; gap: 10px; }
+        .module-header .role-tag { display: none; }
+
+        /* ===== Data Source Tabs ===== */
+        .source-tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+        .source-tab { padding: 12px 24px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; font-size: 14px; font-weight: 500; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+        .source-tab:hover { color: var(--text); background: #f8fafc; }
+        .source-tab.active { border-bottom-color: var(--primary); color: var(--primary); font-weight: 600; }
+        .source-panel { display: none; }
+        .source-panel.active { display: block; }
+
+        /* ===== Template & Config ===== */
+        .config-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .config-row label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+        .config-row select { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; min-width: 200px; }
+
+        /* ===== Dropzone ===== */
+        .dropzone { border: 2px dashed #cbd5e1; border-radius: 14px; padding: 48px 24px; text-align: center; cursor: pointer; background: #f8fafc; transition: all 0.3s; }
+        .dropzone:hover, .dropzone.drag-over { border-color: var(--primary); background: #eff6ff; }
+        .dropzone .drop-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.6; }
+        .dropzone h4 { font-size: 16px; margin-bottom: 8px; }
+        .dropzone p { font-size: 13px; color: var(--text-secondary); }
+        .file-input { display: none; }
+        .file-list { margin-top: 16px; }
+        .file-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #f1f5f9; border-radius: 10px; margin-bottom: 8px; font-size: 14px; }
+        .file-item .remove-btn { color: var(--danger); cursor: pointer; border: none; background: none; font-size: 18px; }
+
+        /* ===== Text Input ===== */
+        .text-area { width: 100%; padding: 16px; border: 1px solid var(--border); border-radius: 12px; font-size: 14px; font-family: inherit; line-height: 1.7; resize: vertical; min-height: 200px; }
+        .text-area:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+        /* ===== Buttons ===== */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-block { width: 100%; margin-top: 20px; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ===== Progress ===== */
+        .progress-section { display: none; background: var(--card); border-radius: 14px; padding: 24px; box-shadow: var(--shadow); margin-bottom: 24px; }
+        .progress-section.active { display: block; }
+        .progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .progress-header h4 { font-size: 15px; display: flex; align-items: center; gap: 10px; }
+        .spinner { width: 20px; height: 20px; border: 3px solid #e2e8f0; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .progress-bar { width: 100%; height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); border-radius: 5px; transition: width 0.5s; }
+        .progress-text { font-size: 13px; color: var(--text-secondary); margin-top: 8px; }
+
+        /* ===== Results ===== */
+        .results-section { display: none; background: var(--card); border-radius: 14px; box-shadow: var(--shadow); margin-bottom: 24px; overflow: hidden; }
+        .results-section.active { display: block; }
+        .results-header { padding: 18px 24px; border-bottom: 1px solid var(--border); }
+        .results-header h3 { font-size: 16px; }
+        .results-tabs { display: flex; border-bottom: 1px solid var(--border); background: #f8fafc; overflow-x: auto; }
+        .results-tab { padding: 12px 20px; font-size: 14px; cursor: pointer; border-bottom: 3px solid transparent; color: var(--text-secondary); white-space: nowrap; }
+        .results-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+        .results-body { padding: 24px; max-height: 600px; overflow-y: auto; }
+
+        /* ===== Data Tables ===== */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .data-table th { background: #f1f5f9; padding: 10px 14px; text-align: left; font-weight: 600; font-size: 13px; color: var(--text-secondary); }
+        .data-table td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; }
+
+        /* ===== Qualitative Analysis Display ===== */
+        .qual-section { background: linear-gradient(135deg, #f5f3ff, #ede9fe); border: 1px solid #a78bfa; border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+        .qual-section h4 { color: #7c3aed; font-size: 15px; margin-bottom: 12px; }
+        .theme-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .theme-pill { background: #ddd6fe; color: #5b21b6; padding: 6px 14px; border-radius: 16px; font-size: 13px; }
+        .code-table { margin-top: 10px; }
+
+        /* ===== History ===== */
+        .history-section { background: var(--card); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+        .history-header { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .history-header h3 { font-size: 16px; }
+        .history-list { max-height: 320px; overflow-y: auto; }
+        .history-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-bottom: 1px solid #f1f5f9; }
+        .history-item:hover { background: #f8fafc; }
+        .history-item .info { display: flex; flex-direction: column; gap: 4px; }
+        .history-item .case-no { font-weight: 600; font-size: 14px; }
+        .history-item .meta { font-size: 12px; color: var(--text-secondary); }
+        .history-item .tag { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 500; margin-left: 8px; }
+        .btn-sm { padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; border: 1px solid var(--border); background: white; }
+        .btn-sm:hover { background: #f1f5f9; }
+        .btn-sm.danger { color: var(--danger); border-color: #fecaca; }
+        .empty-state { padding: 48px; text-align: center; color: var(--text-secondary); }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+
+        /* ===== Export Modal ===== */
+        .export-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 9998; }
+        .export-modal { background: white; border-radius: 20px; padding: 0; max-width: 680px; width: 92%; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 30px 80px rgba(0,0,0,0.25); }
+        .export-modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); }
+        .export-modal-header h2 { font-size: 18px; margin-bottom: 4px; }
+        .export-modal-header p { font-size: 13px; color: var(--text-secondary); }
+        .export-filters { display: flex; align-items: center; gap: 10px; padding: 14px 24px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+        .export-filters select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; background: white; }
+        .export-filters .btn-sm { font-size: 12px; }
+        .export-record-list { flex: 1; overflow-y: auto; max-height: 400px; }
+        .export-record-item { display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.15s; }
+        .export-record-item:hover { background: #f8fafc; }
+        .export-record-item input[type="checkbox"] { flex-shrink: 0; width: 16px; height: 16px; cursor: pointer; }
+        .export-record-item .info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+        .export-record-item .case-no { font-weight: 600; font-size: 13px; }
+        .export-record-item .meta { font-size: 11px; color: var(--text-secondary); }
+        .export-modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .export-modal-footer .export-count { font-size: 13px; color: var(--text-secondary); }
+        .export-modal-footer .export-actions { display: flex; gap: 8px; }
+        .export-btn { padding: 8px 18px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .export-btn.primary { background: var(--primary); color: white; }
+        .export-btn.primary:hover { opacity: 0.9; }
+        .export-btn.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .export-btn.secondary { background: #f1f5f9; color: var(--text); }
+        .export-btn.secondary:hover { background: #e2e8f0; }
+        .export-btn.cancel { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+        .export-btn.cancel:hover { background: #f8fafc; }
+
+        /* ===== Toast ===== */
+        .toast-container { position: fixed; top: 70px; right: 24px; z-index: 1000; }
+        .toast { padding: 12px 20px; border-radius: 12px; font-size: 14px; margin-bottom: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); animation: toastIn 0.3s; }
+        .toast.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+        .toast.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .toast.info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* ===== Template Selector ===== */
+        .template-selector { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+        .template-selector .config-row { margin-bottom: 12px; }
+
+        /* ===== Department Dropdown ===== */
+        .dept-select-wrap { display: inline-flex; align-items: center; gap: 6px; margin-right: 12px; }
+        .dept-select-wrap label { font-size: 13px; font-weight: 500; color: var(--text-secondary); white-space: nowrap; }
+        #deptSelect { padding: 6px 28px 6px 10px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer;
+                      border: 1px solid var(--border); background: white; color: var(--text); transition: all 0.2s;
+                      appearance: none; -webkit-appearance: none;
+                      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M3 5l3 3 3-3'/%3E%3C/svg%3E");
+                      background-repeat: no-repeat; background-position: right 8px center; }
+        #deptSelect:hover { border-color: var(--primary); }
+        #deptSelect:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+        .dept-color-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+        .auto-detect-btn { padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer;
+                           border: 1px dashed var(--primary); background: rgba(59,130,246,0.06); color: var(--primary); transition: all 0.2s; }
+        .auto-detect-btn:hover { background: rgba(59,130,246,0.12); border-style: solid; }
+        .auto-detect-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .detect-result { font-size: 12px; color: var(--text-secondary); margin-left: 8px; }
+
+        /* ===== Stats Entry Card ===== */
+        .stats-entry-card { margin-top: 20px; padding: 24px; border: 2px solid #a7f3d0; border-radius: 16px;
+                            background: linear-gradient(135deg, #ecfdf5, #f0fdf4); position: relative; overflow: hidden; }
+        .stats-entry-card::before { content: ''; position: absolute; top: -40px; right: -40px; width: 120px; height: 120px;
+                                     background: radial-gradient(circle, rgba(5,150,105,0.08) 0%, transparent 70%); border-radius: 50%; }
+        .stats-entry-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .stats-entry-header .icon { font-size: 32px; }
+        .stats-entry-header h4 { font-size: 17px; font-weight: 700; color: #065f46; }
+        .stats-entry-desc { font-size: 13px; color: #047857; margin-bottom: 16px; line-height: 1.6; }
+        .stats-features { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+        .stats-feature-tag { font-size: 12px; padding: 4px 12px; border-radius: 20px; background: white;
+                             color: #059669; border: 1px solid #d1fae5; font-weight: 500; }
+        .stats-entry-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; border: none;
+                           border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; color: white;
+                           background: linear-gradient(135deg, #059669, #10b981); transition: all 0.3s; box-shadow: 0 4px 12px rgba(5,150,105,0.3); }
+        .stats-entry-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(5,150,105,0.4); }
+
+        /* ===== Qualitative Entry Card ===== */
+        .qual-entry-card { margin-top: 16px; padding: 24px; border: 2px solid #c4b5fd; border-radius: 16px;
+                           background: linear-gradient(135deg, #f5f3ff, #ede9fe); position: relative; overflow: hidden; }
+        .qual-entry-card::before { content: ''; position: absolute; top: -40px; right: -40px; width: 120px; height: 120px;
+                                   background: radial-gradient(circle, rgba(124,58,237,0.08) 0%, transparent 70%); border-radius: 50%; }
+        .qual-entry-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .qual-entry-header .icon { font-size: 32px; }
+        .qual-entry-header h4 { font-size: 17px; font-weight: 700; color: #5b21b6; }
+        .qual-entry-desc { font-size: 13px; color: #6d28d9; margin-bottom: 16px; line-height: 1.6; }
+        .qual-features { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+        .qual-feature-tag { font-size: 12px; padding: 4px 12px; border-radius: 20px;
+                            background: white; color: #7c3aed; border: 1px solid #ddd6fe; font-weight: 500; }
+        .qual-entry-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; border: none;
+                          border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; color: white;
+                          background: linear-gradient(135deg, #7c3aed, #8b5cf6); transition: all 0.3s;
+                          box-shadow: 0 4px 12px rgba(124,58,237,0.3); }
+        .qual-entry-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(124,58,237,0.4); }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .method-tabs { grid-template-columns: 1fr; }
+            .navbar-inner { flex-direction: column; }
+            .source-tabs { overflow-x: auto; }
+            .config-row { flex-direction: column; align-items: flex-start; }
+        }
+
+        .footer { text-align: center; padding: 24px; font-size: 12px; color: var(--text-secondary); }
+        .privacy-bar {
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            border: 1px solid #a7f3d0; border-radius: 10px;
+            padding: 10px 20px; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 10px; font-size: 13px; color: #065f46;
+        }
+
+        /* ===== Template Modal ===== */
+        .role-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; z-index: 9999; }
+        .modal-content { max-width: 800px; width: 94%; background: white; border-radius: 20px; padding: 36px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .modal-header h2 { font-size: 20px; }
+        .modal-header-actions { display: flex; gap: 10px; }
+        .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin-bottom: 20px; }
+        .template-card { border: 2px solid var(--border); padding: 18px; border-radius: 14px; position: relative; transition: all 0.2s; }
+        .template-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+        .template-card.custom { border-color: #fbbf24; }
+        .template-card .tpl-name { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+        .template-card .tpl-meta { font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; }
+        .type-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 8px; font-weight: 500; }
+        .type-badge.system { background: #dbeafe; color: #1e40af; }
+        .type-badge.custom { background: #fef3c7; color: #92400e; }
+        .tpl-actions { display: flex; gap: 8px; }
+        .tpl-actions button { font-size: 12px; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--border); background: white; cursor: pointer; }
+        .tpl-actions button:hover { background: #f1f5f9; }
+        .tpl-actions button.danger { color: var(--danger); border-color: #fecaca; }
+        .tpl-actions button.danger:hover { background: #fef2f2; }
+
+        .tpl-form { display: none; }
+        .tpl-form.active { display: block; }
+        .tpl-form label { display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; margin-top: 16px; }
+        .tpl-form input[type="text"] { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; }
+        .field-rows { margin-top: 10px; }
+        .field-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .field-row input { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+        .field-row .remove-field-btn { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 18px; padding: 4px 8px; }
+        .add-field-btn { background: #eff6ff; color: var(--primary); border: 1px dashed var(--primary); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; width: 100%; margin-top: 4px; }
+        .add-field-btn:hover { background: #dbeafe; }
+
+        /* AI 智能提取字段区域 */
+        .ai-extract-section { margin-top: 16px; margin-bottom: 8px; }
+        .ai-extract-toggle { width: 100%; padding: 10px 16px; border: 1px dashed #8b5cf6; border-radius: 10px; background: linear-gradient(135deg, #f5f3ff, #ede9fe); color: #7c3aed; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all .2s; }
+        .ai-extract-toggle:hover { background: linear-gradient(135deg, #ede9fe, #ddd6fe); border-color: #7c3aed; }
+        .ai-extract-toggle .arrow { transition: transform .2s; font-size: 11px; margin-left: auto; }
+        .ai-extract-toggle .arrow.open { transform: rotate(90deg); }
+        .ai-extract-body { display: none; margin-top: 12px; padding: 16px; background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 10px; }
+        .ai-extract-body > p { font-size: 12px; color: #6b7280; margin: 0 0 10px 0; }
+        .ai-extract-textarea { width: 100%; padding: 10px 14px; border: 1px solid #d8b4fe; border-radius: 10px; font-size: 13px; resize: vertical; min-height: 80px; font-family: inherit; box-sizing: border-box; }
+        .ai-extract-textarea:focus { outline: none; border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139,92,246,0.1); }
+        .ai-extract-actions { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+        .ai-analyze-btn { padding: 8px 20px; border: none; border-radius: 8px; background: linear-gradient(135deg, #7c3aed, #8b5cf6); color: white; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .2s; }
+        .ai-analyze-btn:hover { background: linear-gradient(135deg, #6d28d9, #7c3aed); }
+        .ai-analyze-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .ai-extract-status { font-size: 12px; color: #6b7280; }
+        .ai-extract-results { margin-top: 14px; padding-top: 14px; border-top: 1px solid #e9d5ff; }
+        .ai-extract-results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .ai-extract-results-header span { font-size: 13px; font-weight: 600; color: #374151; }
+        .ai-extract-results-header a { font-size: 12px; color: #7c3aed; cursor: pointer; text-decoration: none; margin-left: 10px; }
+        .ai-extract-results-header a:hover { text-decoration: underline; }
+        .ai-confidence { font-size: 10px; color: #9ca3af; margin-left: 4px; }
+        .ai-extract-add-btn { width: 100%; margin-top: 12px; padding: 9px 16px; border: none; border-radius: 8px; background: linear-gradient(135deg, #7c3aed, #8b5cf6); color: white; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; }
+        .ai-extract-add-btn:hover { background: linear-gradient(135deg, #6d28d9, #7c3aed); }
+
+        .preset-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .preset-btn { font-size: 12px; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); background: #f8fafc; cursor: pointer; }
+        .preset-btn:hover { background: #eff6ff; border-color: var(--primary); }
+        .form-actions { display: flex; gap: 12px; margin-top: 24px; }
+        .form-actions .btn-save { flex: 1; padding: 12px; font-size: 15px; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; }
+        .form-actions .btn-cancel { padding: 12px 24px; font-size: 14px; border: 1px solid var(--border); border-radius: 12px; cursor: pointer; background: white; }
+        .score-option { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; }
+
+        /* ===== Field Preview ===== */
+        .preview-section { display: none; background: var(--card); border-radius: 16px; padding: 28px; box-shadow: var(--shadow); margin-bottom: 24px; }
+        .preview-section.active { display: block; }
+        .preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+        .preview-actions { display: flex; gap: 10px; align-items: center; }
+        .category-group { margin-bottom: 20px; }
+        .category-group h4 { font-size: 15px; margin-bottom: 10px; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .field-checkboxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+        .field-checkbox { display: flex; align-items: center; padding: 10px 14px; background: #f8fafc; border: 2px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+        .field-checkbox:hover { border-color: #93c5fd; }
+        .field-checkbox.checked { border-color: var(--primary); background: #eff6ff; }
+        .field-checkbox input[type="checkbox"] { margin-right: 10px; }
+        .field-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+        .field-name { font-weight: 600; font-size: 13px; }
+        .field-example { font-size: 11px; color: var(--text-secondary); }
+        .confidence-badge { font-size: 11px; padding: 2px 8px; border-radius: 8px; background: #d1fae5; color: #065f46; }
+        .btn-group { display: flex; gap: 12px; margin-top: 20px; }
+        .btn-outline { background: white; border: 2px solid var(--primary); color: var(--primary); padding: 12px 20px; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; flex: 1; text-align: center; }
+        .btn-outline:hover { background: #eff6ff; }
+
+        /* ===== Qualitative 4-Step ===== */
+        .qual-steps-container { margin-top: 16px; }
+        .step-panel { background: white; border: 2px solid #e2e8f0; border-radius: 14px; margin-bottom: 14px; overflow: hidden; }
+        .step-panel.expanded { border-color: #7c3aed; }
+        .step-header { background: linear-gradient(135deg, #f5f3ff, #ede9fe); padding: 14px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+        .step-header:hover { background: linear-gradient(135deg, #ede9fe, #ddd6fe); }
+        .step-header h4 { font-size: 15px; color: #5b21b6; margin: 0; }
+        .step-header .count { font-size: 13px; color: #7c3aed; font-weight: normal; }
+        .step-header .toggle-icon { font-size: 14px; color: #7c3aed; }
+        .step-body { padding: 20px; display: none; }
+        .step-panel.expanded .step-body { display: block; }
+        .coding-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .coding-table th { background: #f3f4f6; padding: 10px; text-align: left; font-weight: 600; }
+        .coding-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
+        .code-id { background: #ddd6fe; color: #5b21b6; padding: 3px 10px; border-radius: 8px; font-family: monospace; font-weight: 600; font-size: 12px; }
+        .quote-text { font-style: italic; color: #475569; }
+        .theme-card { background: linear-gradient(135deg, #fefeff, #f5f3ff); border-left: 4px solid #7c3aed; padding: 16px; margin-bottom: 14px; border-radius: 0 10px 10px 0; }
+        .main-theme { font-size: 16px; color: #5b21b6; margin-bottom: 10px; font-weight: 700; }
+        .sub-theme { padding-left: 18px; margin-bottom: 10px; border-left: 2px solid #ddd6fe; padding: 8px 0 8px 18px; }
+        .sub-theme-name { font-weight: 600; font-size: 14px; color: #6d28d9; margin-bottom: 4px; }
+        .sub-theme-desc { font-size: 12px; color: #64748b; margin-bottom: 4px; }
+        .linked-codes { font-size: 11px; color: #7c3aed; font-family: monospace; }
+        .quote-group { margin-bottom: 18px; }
+        .quote-group h5 { font-size: 14px; color: #5b21b6; margin-bottom: 8px; }
+        .representative-quote { background: #fffbeb; border-left: 4px solid #fbbf24; padding: 10px 16px; margin: 8px 0; font-size: 13px; font-style: italic; color: #78350f; line-height: 1.7; border-radius: 0 8px 8px 0; }
+        .hierarchy-tree { font-size: 13px; line-height: 2; background: #fafbfc; padding: 16px; border-radius: 10px; margin-bottom: 14px; }
+        .h-level-1 { font-weight: 700; color: #5b21b6; font-size: 15px; margin-bottom: 4px; }
+        .h-level-2 { color: #7c3aed; font-weight: 600; padding-left: 24px; }
+        .h-level-3 { color: #6d28d9; padding-left: 48px; }
+        .h-level-4 { color: #64748b; padding-left: 72px; font-style: italic; font-size: 12px; }
+        .methodology-note { background: #eff6ff; border: 1px solid #93c5fd; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: #1e40af; }
+
+        /* ===== Template Card Selection & Detail ===== */
+        .template-card.selected { border-color: var(--primary); background: linear-gradient(135deg, #eff6ff, #dbeafe); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+        .template-card.custom.selected { border-color: #f59e0b; background: linear-gradient(135deg, #fffbeb, #fef3c7); box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
+        .template-card { cursor: pointer; }
+        .template-detail-panel { display: none; background: #f8fafc; border: 2px solid var(--primary); border-radius: 14px; padding: 20px; margin-top: 16px; }
+        .template-detail-panel.active { display: block; }
+        .template-detail-panel h4 { font-size: 16px; margin-bottom: 14px; color: var(--text); display: flex; justify-content: space-between; align-items: center; }
+        .field-list { margin-bottom: 16px; }
+        .field-list-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: white; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; transition: all 0.2s; }
+        .field-list-item:hover { border-color: var(--primary); background: #fafbfc; }
+        .field-list-item .field-index { width: 24px; height: 24px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+        .field-list-item input.field-edit-input { flex: 1; padding: 6px 10px; border: 1px solid transparent; border-radius: 6px; font-size: 14px; background: transparent; }
+        .field-list-item input.field-edit-input:focus { outline: none; border-color: var(--primary); background: white; }
+        .field-list-item .field-delete-btn { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 6px; transition: all 0.2s; }
+        .field-list-item .field-delete-btn:hover { color: var(--danger); background: #fef2f2; }
+        .add-new-field-row { display: flex; gap: 10px; margin-top: 10px; }
+        .add-new-field-row input { flex: 1; padding: 10px 14px; border: 2px dashed var(--border); border-radius: 10px; font-size: 14px; }
+        .add-new-field-row input:focus { outline: none; border-color: var(--primary); border-style: solid; }
+        .add-new-field-row button { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .add-new-field-row button:hover { background: #1d4ed8; }
+        .detail-actions { display: flex; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+        .detail-actions .btn-save-fields { flex: 1; padding: 12px; background: linear-gradient(135deg, #059669, #10b981); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .detail-actions .btn-save-fields:hover { opacity: 0.9; }
+        .detail-actions .btn-close-detail { padding: 12px 20px; background: white; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; font-size: 14px; }
+        .detail-actions .btn-close-detail:hover { background: #f1f5f9; }
+        .field-count-badge { font-size: 12px; background: var(--primary); color: white; padding: 2px 10px; border-radius: 10px; font-weight: 500; }
+        .detail-loading { text-align: center; padding: 30px; color: var(--text-secondary); }
+
+        /* ===== Preset Field Checkboxes ===== */
+        .preset-checkboxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin-top: 10px; }
+        .preset-checkbox { display: flex; align-items: center; padding: 10px 14px; background: #f8fafc; border: 2px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+        .preset-checkbox:hover { border-color: #93c5fd; background: #fafbfc; }
+        .preset-checkbox.checked { border-color: var(--primary); background: #eff6ff; }
+        .preset-checkbox input[type="checkbox"] { margin-right: 10px; width: 16px; height: 16px; cursor: pointer; }
+        .preset-checkbox .preset-label { font-size: 14px; font-weight: 500; }
+
+        /* ===== User Guide Modal ===== */
+        .guide-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 10000; }
+        .guide-overlay.hidden { display: none; }
+        .guide-box { background: white; border-radius: 20px; max-width: 780px; width: 94%; max-height: 88vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 30px 80px rgba(0,0,0,0.3); }
+        .guide-header { padding: 28px 32px 0; display: flex; justify-content: space-between; align-items: flex-start; }
+        .guide-header h2 { font-size: 22px; background: linear-gradient(135deg, #1e40af, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .guide-header .guide-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-secondary); padding: 4px 8px; }
+        .guide-progress { display: flex; gap: 6px; padding: 14px 32px 0; }
+        .guide-dot { width: 10px; height: 10px; border-radius: 50%; background: #e2e8f0; cursor: pointer; transition: all 0.3s; }
+        .guide-dot.active { background: var(--primary); width: 28px; border-radius: 5px; }
+        .guide-body { flex: 1; overflow-y: auto; padding: 20px 32px 28px; }
+        .guide-page { display: none; }
+        .guide-page.active { display: block; }
+        .guide-page h3 { font-size: 18px; margin-bottom: 14px; color: var(--text); }
+        .guide-page h4 { font-size: 15px; margin: 16px 0 8px; color: #475569; }
+        .guide-page p { font-size: 14px; line-height: 1.8; color: #475569; margin-bottom: 10px; }
+        .guide-page ul { padding-left: 20px; margin-bottom: 12px; }
+        .guide-page li { font-size: 14px; line-height: 1.8; color: #475569; margin-bottom: 4px; }
+        .guide-page .tip-box { background: #eff6ff; border: 1px solid #93c5fd; border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #1e40af; margin: 12px 0; }
+        .guide-page .warn-box { background: #fffbeb; border: 1px solid #fbbf24; border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #92400e; margin: 12px 0; }
+        .guide-page .step-num { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; background: var(--primary); color: white; border-radius: 50%; font-size: 13px; font-weight: 700; margin-right: 8px; }
+        .guide-page .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+        .guide-page .feature-item { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+        .guide-page .feature-item strong { display: block; font-size: 14px; margin-bottom: 4px; }
+        .guide-page .feature-item span { font-size: 12px; color: var(--text-secondary); }
+        .guide-footer { padding: 0 32px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .guide-footer .page-info { font-size: 13px; color: var(--text-secondary); }
+        .guide-footer .guide-btns { display: flex; gap: 10px; }
+        .guide-footer .guide-btn-prev { padding: 10px 20px; border: 1px solid var(--border); border-radius: 10px; background: white; cursor: pointer; font-size: 14px; }
+        .guide-footer .guide-btn-next { padding: 10px 24px; border: none; border-radius: 10px; background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .guide-footer .guide-btn-next:hover { background: linear-gradient(135deg, #1d4ed8, #2563eb); }
+        @media (max-width: 768px) { .guide-page .feature-grid { grid-template-columns: 1fr; } }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <div class="navbar-inner">
+            <h1>&#9879; MedSnap 临床数据智能平台</h1>
+            <div class="nav-actions">
+                <span class="record-count" id="recordCount">已处理: 0 份</span>
+                <button class="nav-btn" onclick="location.href='/statistics'">统计分析</button>
+                <button class="nav-btn" onclick="exportData()">导出数据</button>
+                <button class="nav-btn" onclick="cleanAll()">清空</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="container">
+        <div class="privacy-bar">
+            <span>&#128737;</span>
+            <span><strong>隐私保障：</strong>所有数据均在本地处理和存储，敏感信息（身份证号、手机号、姓名、地址等）已进行自动脱敏处理，脱敏后再进行AI分析。</span>
+        </div>
+        <!-- Research Method Selection -->
+        <div class="method-tabs">
+            <div class="method-tab quantitative active" onclick="switchMethod('quantitative')">
+                <div class="tab-icon">&#128202;</div>
+                <h3>定量研究</h3>
+                <p>结构化提取 · 统计分析 · 数据可视化</p>
+            </div>
+            <div class="method-tab qualitative" onclick="switchMethod('qualitative')">
+                <div class="tab-icon">&#128300;</div>
+                <h3>质性分析</h3>
+                <p>访谈分析 · 主题编码 · 概念网络 · 情感分析</p>
+            </div>
+        </div>
+
+        <!-- Quantitative Research Module -->
+        <div class="module-panel active" id="panel-quantitative">
+            <div class="module-header">
+                <h3>&#128202; 定量研究模块</h3>
+                <div class="config-row">
+                    <div class="dept-select-wrap">
+                        <label>科室:</label>
+                        <select id="deptSelect" onchange="switchDepartment(this.value)">
+                            <option value="general" data-color="#64748b">通用</option>
+                            <option value="cardiology" data-color="#dc2626">心内科</option>
+                            <option value="neurology" data-color="#7c3aed">神经内科</option>
+                            <option value="surgery" data-color="#0891b2">外科</option>
+                            <option value="pediatrics" data-color="#f59e0b">儿科</option>
+                            <option value="obstetrics" data-color="#ec4899">妇产科</option>
+                            <option value="emergency" data-color="#ef4444">急诊科</option>
+                        </select>
+                        <button class="auto-detect-btn" id="autoDetectBtn" onclick="autoDetectDepartment()" title="AI自动识别科室">&#9881; 自动识别</button>
+                        <span class="detect-result" id="detectResult"></span>
+                    </div>
+                    <label>模板:</label>
+                    <select id="quantTemplate"></select>
+                    <button class="nav-btn" style="color:var(--text);border-color:var(--border);" onclick="openTemplateModal()">管理模板</button>
+                </div>
+            </div>
+
+            <div class="source-tabs">
+                <div class="source-tab active" onclick="switchSource('quantitative', 'image')">&#128248; 图片/PDF上传</div>
+                <div class="source-tab" onclick="switchSource('quantitative', 'voice')">&#127908; 语音上传</div>
+                <div class="source-tab" onclick="switchSource('quantitative', 'text')">&#128221; 文本输入</div>
+            </div>
+
+            <div class="source-panel active" id="quant-image">
+                <input type="file" id="quantImageInput" class="file-input" multiple accept=".jpg,.jpeg,.png,.bmp,.tiff,.pdf">
+                <div class="dropzone" id="quantImageZone" onclick="document.getElementById('quantImageInput').click()">
+                    <div class="drop-icon">&#128247;</div>
+                    <h4>上传医疗文档图片或PDF</h4>
+                    <p>支持 JPG / PNG / BMP / TIFF / PDF 格式，可批量上传</p>
+                </div>
+                <div class="file-list" id="quantImageList"></div>
+                <div class="btn-group">
+                    <button class="btn-outline" onclick="previewFields('image')" id="quantImagePreviewBtn" disabled>&#128269; 预览可提取字段</button>
+                    <button class="btn btn-primary" style="flex:1;padding:12px;border-radius:12px;" onclick="processQuantitative('image')" id="quantImageBtn" disabled>开始结构化提取</button>
+                </div>
+            </div>
+
+            <div class="source-panel" id="quant-voice">
+                <input type="file" id="quantVoiceInput" class="file-input" multiple accept=".wav,.mp3,.m4a,.aac,.flac,.amr,.opus">
+                <div class="dropzone" id="quantVoiceZone" onclick="document.getElementById('quantVoiceInput').click()">
+                    <div class="drop-icon">&#127908;</div>
+                    <h4>上传语音录音文件</h4>
+                    <p>支持 WAV / MP3 / M4A / AAC / FLAC 格式</p>
+                </div>
+                <div class="file-list" id="quantVoiceList"></div>
+                <div class="btn-group">
+                    <button class="btn-outline" onclick="previewFields('voice')" id="quantVoicePreviewBtn" disabled>&#128269; 预览可提取字段</button>
+                    <button class="btn btn-primary" style="flex:1;padding:12px;border-radius:12px;" onclick="processQuantitative('voice')" id="quantVoiceBtn" disabled>开始转写并提取</button>
+                </div>
+            </div>
+
+            <div class="source-panel" id="quant-text">
+                <textarea class="text-area" id="quantTextInput" placeholder="在此粘贴病历文本、检验报告、护理记录...&#10;&#10;系统将根据所选模板提取结构化数据。"></textarea>
+                <div class="btn-group">
+                    <button class="btn-outline" onclick="previewFields('text')">&#128269; 预览可提取字段</button>
+                    <button class="btn btn-primary" style="flex:1;padding:12px;border-radius:12px;" onclick="processQuantitative('text')">提取结构化数据</button>
+                </div>
+            </div>
+
+            <!-- Statistics Analysis Entry Card -->
+            <div class="stats-entry-card">
+                <div class="stats-entry-header">
+                    <span class="icon">&#128202;</span>
+                    <h4>数据统计分析平台</h4>
+                </div>
+                <p class="stats-entry-desc">对提取的结构化数据进行专业统计分析，支持从数据预处理到结果导出的完整分析流程。可直接导入已提取的病历记录进行分析。</p>
+                <div class="stats-features">
+                    <span class="stats-feature-tag">描述统计</span>
+                    <span class="stats-feature-tag">差异比较</span>
+                    <span class="stats-feature-tag">相关与回归</span>
+                    <span class="stats-feature-tag">正态性检验</span>
+                    <span class="stats-feature-tag">方差齐性检验</span>
+                    <span class="stats-feature-tag">可视化图表</span>
+                    <span class="stats-feature-tag">数据导出</span>
+                </div>
+                <button class="stats-entry-btn" onclick="location.href='/statistics'">&#128200; 进入统计分析平台 &#8594;</button>
+            </div>
+        </div>
+
+        <!-- Qualitative Analysis Module -->
+        <div class="module-panel" id="panel-qualitative">
+            <div class="module-header">
+                <h3>&#128300; 质性分析模块</h3>
+                <div class="config-row">
+                    <label>分析类型:</label>
+                    <select id="qualType">
+                        <option value="interview">深度访谈分析</option>
+                        <option value="focus_group">焦点小组分析</option>
+                        <option value="observation">观察记录分析</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="source-tabs">
+                <div class="source-tab active" onclick="switchSource('qualitative', 'text')">&#128221; 文本输入</div>
+                <div class="source-tab" onclick="switchSource('qualitative', 'voice')">&#127908; 语音上传</div>
+                <div class="source-tab" onclick="switchSource('qualitative', 'image')">&#128248; 图片上传</div>
+            </div>
+
+            <div class="source-panel active" id="qual-text">
+                <textarea class="text-area" id="qualTextInput" placeholder="在此粘贴访谈转录文本、焦点小组记录、观察笔记...&#10;&#10;系统将自动进行主题编码、关键词提取、情感分析等质性研究分析。"></textarea>
+                <button class="btn btn-block" style="background:linear-gradient(135deg,#a78bfa,#c4b5fd);color:#5b21b6;" onclick="processQualitative('text')">开始结构化提取</button>
+            </div>
+
+            <div class="source-panel" id="qual-voice">
+                <input type="file" id="qualVoiceInput" class="file-input" multiple accept=".wav,.mp3,.m4a,.aac,.flac,.amr,.opus">
+                <div class="dropzone" id="qualVoiceZone" onclick="document.getElementById('qualVoiceInput').click()">
+                    <div class="drop-icon">&#127908;</div>
+                    <h4>上传访谈录音文件</h4>
+                    <p>支持 WAV / MP3 / M4A / AAC / FLAC 格式，系统将自动转录并分析</p>
+                </div>
+                <div class="file-list" id="qualVoiceList"></div>
+                <button class="btn btn-block" style="background:linear-gradient(135deg,#a78bfa,#c4b5fd);color:#5b21b6;" onclick="processQualitative('voice')" id="qualVoiceBtn" disabled>开始转录并分析</button>
+            </div>
+
+            <div class="source-panel" id="qual-image">
+                <input type="file" id="qualImageInput" class="file-input" multiple accept=".jpg,.jpeg,.png,.pdf">
+                <div class="dropzone" id="qualImageZone" onclick="document.getElementById('qualImageInput').click()">
+                    <div class="drop-icon">&#128248;</div>
+                    <h4>上传访谈记录图片/PDF</h4>
+                    <p>支持 JPG / PNG / PDF 格式，系统将OCR识别后进行质性分析</p>
+                </div>
+                <div class="file-list" id="qualImageList"></div>
+                <button class="btn btn-block" style="background:linear-gradient(135deg,#a78bfa,#c4b5fd);color:#5b21b6;" onclick="processQualitative('image')" id="qualImageBtn" disabled>开始识别并分析</button>
+            </div>
+
+            <!-- Qualitative Analysis Info Card -->
+            <div class="qual-entry-card">
+                <div class="qual-entry-header">
+                    <span class="icon">&#128300;</span>
+                    <h4>质性分析工作台</h4>
+                </div>
+                <p class="qual-entry-desc">基于学术标准的四步法质性分析流程，支持深度访谈、焦点小组和观察记录的系统化分析，自动完成从初始编码到层级化输出的全流程。</p>
+                <div class="qual-features">
+                    <span class="qual-feature-tag">深度访谈分析</span>
+                    <span class="qual-feature-tag">焦点小组分析</span>
+                    <span class="qual-feature-tag">观察记录分析</span>
+                    <span class="qual-feature-tag">四步法编码</span>
+                    <span class="qual-feature-tag">主题聚类</span>
+                    <span class="qual-feature-tag">代表性引用</span>
+                </div>
+                <button class="qual-entry-btn" onclick="processQualitative('text')">&#128300; 进入质性分析平台 &#8594;</button>
+            </div>
+        </div>
+
+        <!-- Field Preview Section -->
+        <div class="preview-section" id="previewSection">
+            <div class="preview-header">
+                <h3>&#128203; 可提取字段预览</h3>
+                <div class="preview-actions">
+                    <button class="nav-btn" style="color:var(--text);border-color:var(--border);" onclick="selectAllFields()">全选</button>
+                    <button class="nav-btn" style="color:var(--text);border-color:var(--border);" onclick="deselectAllFields()">清空</button>
+                    <button class="btn btn-primary" style="padding:8px 20px;border-radius:10px;" onclick="executeSelectedExtraction()">&#128229; 提取选中字段</button>
+                    <button class="nav-btn" style="color:var(--text);border-color:var(--border);" onclick="closePreview()">&#10005;</button>
+                </div>
+            </div>
+            <div id="previewBody"></div>
+        </div>
+
+        <!-- Progress Section -->
+        <div class="progress-section" id="progressSection">
+            <div class="progress-header">
+                <h4><div class="spinner"></div><span id="progressTitle">正在处理...</span></h4>
+                <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="progressBar" style="width:0%"></div></div>
+            <p class="progress-text" id="progressText">准备中...</p>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection">
+            <div class="results-header"><h3 id="resultsTitle">&#9989; 分析结果</h3></div>
+            <div class="results-tabs" id="resultsTabs"></div>
+            <div class="results-body" id="resultsBody"></div>
+        </div>
+
+        <!-- History Section -->
+        <div class="history-section">
+            <div class="history-header">
+                <h3>&#128203; 处理历史</h3>
+                <button class="btn-sm" onclick="refreshHistory()">刷新</button>
+            </div>
+            <div class="history-list" id="historyList">
+                <div class="empty-state"><div class="icon">&#128196;</div><p>暂无处理记录</p></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">MedSnap 临床数据智能平台 | 数据仅存储于本地 | 敏感信息已自动脱敏 | 请勿用于临床诊断 | <a href="javascript:void(0)" onclick="showGuide()" style="color:var(--primary);text-decoration:none;">使用指南</a></div>
+
+    <!-- User Guide Modal -->
+    <div class="guide-overlay hidden" id="guideOverlay">
+        <div class="guide-box">
+            <div class="guide-header">
+                <h2>MedSnap 使用指南</h2>
+                <button class="guide-close" onclick="closeGuide()">&#10005;</button>
+            </div>
+            <div class="guide-progress" id="guideDots"></div>
+            <div class="guide-body" id="guideBody">
+
+                <!-- Page 1: Welcome -->
+                <div class="guide-page active" data-page="0">
+                    <h3>欢迎使用 MedSnap 临床数据智能平台</h3>
+                    <p>MedSnap 是一款面向医疗专业人员的 AI 驱动临床数据提取与分析工具，支持从图片、语音、文本等多种来源中自动识别和结构化提取医疗信息。</p>
+                    <div class="feature-grid">
+                        <div class="feature-item"><strong>定量研究</strong><span>结构化数据提取、模板管理、统计分析与可视化</span></div>
+                        <div class="feature-item"><strong>质性分析</strong><span>访谈编码、主题聚类、引用提取、层级化输出</span></div>
+                        <div class="feature-item"><strong>7大科室</strong><span>心内科、神经内科、外科、儿科、妇产科、急诊科 + 通用</span></div>
+                        <div class="feature-item"><strong>多数据源</strong><span>支持图片/PDF、语音录音、文本粘贴三种输入方式</span></div>
+                    </div>
+                    <div class="tip-box">首次使用时，请在定量研究模块顶部的科室下拉菜单中选择对应科室。系统会根据科室自动加载专属模板和预设字段。您也可以使用「自动识别」功能让AI判断文档所属科室。</div>
+                </div>
+
+                <!-- Page 2: Department Selection -->
+                <div class="guide-page" data-page="1">
+                    <h3>第一步：选择科室</h3>
+                    <p>在定量研究模块顶部的下拉菜单中选择您的临床科室，系统提供 7 个分类：</p>
+                    <h4><span class="step-num">1</span>心内科</h4>
+                    <p>专属模板覆盖 EF 值、BNP、冠脉造影、心功能分级 NYHA、PCI/CABG 等心血管核心字段。</p>
+                    <h4><span class="step-num">2</span>神经内科</h4>
+                    <p>专属模板覆盖 GCS/NIHSS 评分、肌力分级、头颅 CT/MRI、溶栓/取栓记录等神经专科字段。</p>
+                    <h4><span class="step-num">3</span>外科</h4>
+                    <p>专属模板覆盖手术名称、ASA 分级、麻醉方式、术中出血量、引流管、病理结果等手术核心字段。</p>
+                    <h4><span class="step-num">4</span>儿科</h4>
+                    <p>专属模板覆盖出生体重、胎龄、生长发育百分位、疫苗接种、喂养方式等儿科特色字段。</p>
+                    <h4><span class="step-num">5</span>妇产科</h4>
+                    <p>专属模板覆盖孕周、GPAL、胎心率、羊水指数、分娩方式、Apgar 评分等产科核心字段。</p>
+                    <h4><span class="step-num">6</span>急诊科</h4>
+                    <p>专属模板覆盖分诊级别、MEWS/NEWS 评分、发病至就诊时间、急救措施、转归等急诊关键字段。</p>
+                    <h4><span class="step-num">7</span>通用</h4>
+                    <p>包含所有原始通用模板（门诊病历、护理量表、科研数据等），适用于跨科室通用场景。</p>
+                    <div class="tip-box">每个科室提供 4 套专属模板：诊疗记录、护理评估、科研数据、语音录入。点击「自动识别」按钮可让 AI 根据文本内容自动推荐最匹配的科室。</div>
+                </div>
+
+                <!-- Page 3: Quantitative -->
+                <div class="guide-page" data-page="2">
+                    <h3>第二步：定量研究模块</h3>
+                    <p>定量研究模块用于从医疗文档中提取结构化数据。</p>
+                    <h4>选择科室与模板</h4>
+                    <p>在模块顶部选择科室后，模板下拉菜单会自动加载该科室的专属模板。每个科室提供诊疗记录、护理评估、科研数据、语音录入四类模板。</p>
+                    <h4>AI自动识别科室</h4>
+                    <p>先在文本输入框中粘贴医疗文本，然后点击「自动识别」按钮。AI 会分析文本内容并自动切换到最匹配的科室，同时显示置信度百分比。</p>
+                    <h4>上传数据</h4>
+                    <ul>
+                        <li><strong>图片/PDF 上传：</strong>支持 JPG、PNG、BMP、TIFF、PDF 格式，可批量上传多个文件</li>
+                        <li><strong>语音上传：</strong>支持 WAV、MP3、M4A、AAC、FLAC 格式，系统自动转录后提取数据</li>
+                        <li><strong>文本输入：</strong>直接粘贴病历、检验报告等文本内容</li>
+                    </ul>
+                    <h4>字段预览功能</h4>
+                    <p>点击「预览可提取字段」按钮，系统会先分析文档内容，列出所有可识别的字段及其置信度。您可以勾选需要的字段后再执行提取，避免提取不必要的信息。</p>
+                    <div class="tip-box">字段预览会按类别分组显示，每个字段旁标注置信度百分比和示例值，帮助您判断提取质量。</div>
+                </div>
+
+                <!-- Page 4: Qualitative -->
+                <div class="guide-page" data-page="3">
+                    <h3>第三步：质性分析模块</h3>
+                    <p>质性分析模块采用严格的学术四步法，适用于深度访谈、焦点小组和观察记录分析。</p>
+                    <h4>选择分析类型</h4>
+                    <ul>
+                        <li><strong>深度访谈分析：</strong>聚焦患者体验、疾病认知、治疗态度、心理感受</li>
+                        <li><strong>焦点小组分析：</strong>聚焦群体共识、争议点、互动模式、观点演变</li>
+                        <li><strong>观察记录分析：</strong>聚焦行为模式、环境因素、非语言信息、事件序列</li>
+                    </ul>
+                    <h4>四步分析法</h4>
+                    <p><span class="step-num">1</span><strong>初始编码（Open Coding）：</strong>逐句/段识别有意义概念，生成 8-20 个编码。</p>
+                    <p><span class="step-num">2</span><strong>主题聚类（Theme Clustering）：</strong>将编码归纳为 3-5 个主主题。</p>
+                    <p><span class="step-num">3</span><strong>代表性引用（Representative Quotes）：</strong>为每个主题选取 2-3 条原文引用。</p>
+                    <p><span class="step-num">4</span><strong>层级化输出（Hierarchical Output）：</strong>按「主题 - 子主题 - 编码 - 原话摘录」四级结构呈现。</p>
+                    <div class="tip-box">分析结果以可折叠面板展示，第四步（层级化结构）默认展开。点击每步标题可展开/收起。</div>
+                </div>
+
+                <!-- Page 5: Template Management -->
+                <div class="guide-page" data-page="4">
+                    <h3>第四步：模板管理</h3>
+                    <p>点击定量研究模块中的「管理模板」按钮打开模板管理界面。</p>
+                    <h4>系统模板</h4>
+                    <p>每个科室内置 4 套系统模板（诊疗记录、护理评估、科研数据、语音录入），通用科室保留原有 12 套模板。系统模板为只读，不可删除。</p>
+                    <h4>创建自定义模板</h4>
+                    <ul>
+                        <li>点击「新建模板」进入表单视图</li>
+                        <li>输入模板名称</li>
+                        <li>系统会根据当前科室自动显示分类的预设字段（默认全选）</li>
+                        <li>取消不需要的预设字段，或在下方添加自定义字段</li>
+                        <li>如模板涉及评分项（如量表），勾选「包含评分项」选项</li>
+                        <li>点击「保存模板」完成创建</li>
+                    </ul>
+                    <h4>编辑和删除</h4>
+                    <p>自定义模板支持编辑和删除操作。系统内置模板的字段可编辑但不可删除模板本身。</p>
+                    <div class="warn-box">删除模板不会影响已使用该模板提取的历史记录。</div>
+                </div>
+
+                <!-- Page 6: Results & History -->
+                <div class="guide-page" data-page="5">
+                    <h3>第五步：查看结果与管理数据</h3>
+                    <h4>查看分析结果</h4>
+                    <p>处理完成后，结果会自动显示在页面中。多份文档可通过顶部选项卡切换查看。</p>
+                    <ul>
+                        <li><strong>定量数据：</strong>以字段-值表格形式展示结构化提取结果</li>
+                        <li><strong>质性分析：</strong>以四步折叠面板展示编码、主题、引用和层级结构</li>
+                        <li><strong>语音数据：</strong>额外显示转录原文，可核对识别准确性</li>
+                    </ul>
+                    <h4>处理历史</h4>
+                    <p>页面底部的「处理历史」区域自动记录所有处理结果。点击「查看」可回看任意历史记录。</p>
+                    <h4>导出数据</h4>
+                    <p>点击导航栏的「导出数据」按钮，系统会将所有记录导出为 Excel 文件。导出文件按科室分 Sheet 页，低置信度字段会标红提示。</p>
+                    <div class="warn-box">所有数据仅存储于服务器本地数据库，不会上传至第三方。本工具仅供辅助分析，请勿直接用于临床诊断。</div>
+                </div>
+
+                <!-- Page 7: FAQ -->
+                <div class="guide-page" data-page="6">
+                    <h3>常见问题与最佳实践</h3>
+                    <h4>常见问题</h4>
+                    <p><strong>Q：如何选择正确的科室？</strong><br>A：可以手动在下拉菜单中选择，也可以先粘贴文本后点击「自动识别」让 AI 推荐。</p>
+                    <p><strong>Q：支持哪些图片格式？</strong><br>A：JPG、PNG、BMP、TIFF 和 PDF。建议使用清晰、光照均匀的扫描件或照片，分辨率不低于 300dpi。</p>
+                    <p><strong>Q：语音识别支持哪些语言？</strong><br>A：主要支持中文和英文，推荐使用安静环境录音的 WAV 或 MP3 文件。</p>
+                    <p><strong>Q：通用科室和专科有什么区别？</strong><br>A：通用科室保留原有 12 套模板，适用于跨科室通用场景。6 个专科各有针对性优化的提取字段和 AI Prompt，识别准确率更高。</p>
+                    <h4>最佳实践</h4>
+                    <ul>
+                        <li>优先使用对应专科模板，提取准确率显著高于通用模板</li>
+                        <li>上传图片前确保文档方向正确、文字清晰、无大面积遮挡</li>
+                        <li>处理量表类文档时，选择对应的量表模板可获得更准确的评分提取</li>
+                        <li>质性分析建议输入不少于 200 字的文本以获得有意义的编码结果</li>
+                        <li>定期导出数据备份，避免数据丢失</li>
+                        <li>利用字段预览功能可在正式提取前评估文档识别质量</li>
+                    </ul>
+                    <div class="tip-box">您可以随时点击页面底部的「使用指南」链接重新打开本指南。</div>
+                </div>
+
+            </div>
+            <div class="guide-footer">
+                <span class="page-info" id="guidePageInfo">1 / 7</span>
+                <div class="guide-btns">
+                    <button class="guide-btn-prev" id="guidePrevBtn" onclick="guideNav(-1)">上一页</button>
+                    <button class="guide-btn-next" id="guideNextBtn" onclick="guideNav(1)">下一页</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template Modal -->
+    <div class="role-overlay" id="templateModal" style="display:none;background:rgba(0,0,0,0.5);">
+        <div class="modal-content">
+            <!-- List View -->
+            <div id="tplListView">
+                <div class="modal-header">
+                    <h2>&#128221; 模板管理</h2>
+                    <div class="modal-header-actions">
+                        <button class="btn-outline" style="padding:8px 16px;font-size:13px;flex:unset;border-width:1px;" onclick="showCreateForm()">+ 新建模板</button>
+                        <button class="nav-btn" style="color:var(--text);border-color:var(--border);" onclick="closeTemplateModal()">关闭</button>
+                    </div>
+                </div>
+                <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">点击模板卡片查看详情和编辑字段</p>
+                <div class="template-grid" id="templateGrid"></div>
+                <!-- Template Detail Panel -->
+                <div class="template-detail-panel" id="templateDetailPanel">
+                    <h4>
+                        <span id="detailTemplateName">模板详情</span>
+                        <span class="field-count-badge" id="detailFieldCount">0 个字段</span>
+                    </h4>
+                    <div class="field-list" id="detailFieldList"></div>
+                    <div class="add-new-field-row">
+                        <input type="text" id="newFieldInput" placeholder="输入新字段名称，如：血压、诊断...">
+                        <button onclick="addFieldToDetail()">添加字段</button>
+                    </div>
+                    <div class="detail-actions">
+                        <button class="btn-close-detail" onclick="closeDetailPanel()">收起详情</button>
+                        <button class="btn-save-fields" onclick="saveDetailFields()">&#10003; 保存修改</button>
+                    </div>
+                </div>
+            </div>
+            <!-- Form View -->
+            <div id="tplFormView" class="tpl-form">
+                <div class="modal-header">
+                    <h2 id="tplFormTitle">&#10133; 新建模板</h2>
+                    <button class="nav-btn" style="color:var(--text);border-color:var(--border);" onclick="showListView()">&#8592; 返回列表</button>
+                </div>
+                <label>模板名称</label>
+                <input type="text" id="tplNameInput" placeholder="如: 自定义评估模板">
+                
+                <!-- Preset Fields Section (for new templates) -->
+                <div id="presetFieldsSection" style="margin-top:16px;">
+                    <label style="display:flex;justify-content:space-between;align-items:center;">
+                        <span>预设字段 <span style="font-weight:400;color:var(--text-secondary);">(根据角色自动推荐)</span></span>
+                        <span style="font-size:12px;">
+                            <a href="javascript:void(0)" onclick="selectAllPresets()" style="color:var(--primary);text-decoration:none;">全选</a>
+                            <span style="color:var(--border);margin:0 6px;">|</span>
+                            <a href="javascript:void(0)" onclick="deselectAllPresets()" style="color:var(--text-secondary);text-decoration:none;">清空</a>
+                        </span>
+                    </label>
+                    <div class="preset-checkboxes" id="presetCheckboxes"></div>
+                </div>
+                
+                <!-- Custom Fields Section -->
+                <label style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;">
+                    <span>自定义字段 <span style="font-weight:400;color:var(--text-secondary);">(可选)</span></span>
+                </label>
+                <div class="field-rows" id="tplFieldRows"></div>
+                <button class="add-field-btn" onclick="addFieldRow()">+ 添加自定义字段</button>
+                
+                <!-- AI 智能提取字段区域 -->
+                <div id="aiExtractSection" class="ai-extract-section">
+                    <button type="button" class="ai-extract-toggle" onclick="toggleAiExtract()">
+                        <span>&#10024; AI 从文本智能提取字段</span>
+                        <span class="arrow" id="aiExtractArrow">&#9654;</span>
+                    </button>
+                    <div id="aiExtractBody" class="ai-extract-body">
+                        <p>粘贴病历描述、评估表内容、研究方案等文本，AI 将自动识别可用作模板字段的关键术语</p>
+                        <textarea id="aiExtractTextarea" class="ai-extract-textarea" maxlength="5000" rows="4"
+                                  placeholder="在此粘贴或输入文本内容，例如：&#10;患者男性，56岁，因反复头痛2周入院。查体：血压150/90mmHg，心率78次/分..."></textarea>
+                        <div class="ai-extract-actions">
+                            <button type="button" id="aiAnalyzeBtn" class="ai-analyze-btn" onclick="analyzeFieldsFromText()">
+                                &#128269; AI 分析字段
+                            </button>
+                            <span id="aiExtractStatus" class="ai-extract-status"></span>
+                        </div>
+                        <div id="aiExtractResults" style="display:none">
+                            <div class="ai-extract-results-header">
+                                <span>识别到以下字段：</span>
+                                <div>
+                                    <a onclick="selectAllAiFields()">全选</a>
+                                    <a onclick="deselectAllAiFields()">清空</a>
+                                </div>
+                            </div>
+                            <div id="aiExtractCheckboxes" class="preset-checkboxes"></div>
+                            <button type="button" class="ai-extract-add-btn" onclick="addAiSelectedFields()">&#10003; 添加选中字段</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="score-option">
+                    <input type="checkbox" id="tplScoreCheck">
+                    <span>此模板包含评分项（评分将提取为数字）</span>
+                </div>
+                <input type="hidden" id="tplEditId" value="">
+                <div class="form-actions">
+                    <button class="btn-cancel" onclick="showListView()">取消</button>
+                    <button class="btn-save" onclick="saveTemplate()">保存模板</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Selection Modal -->
+    <div class="export-overlay" id="exportOverlay">
+        <div class="export-modal">
+            <div class="export-modal-header">
+                <h2>&#128229; 导出数据</h2>
+                <p>选择要导出的记录，支持按类别和模块筛选</p>
+            </div>
+            <div class="export-filters">
+                <label style="font-size:12px;font-weight:600;">类别:</label>
+                <select id="exportFilterRole" onchange="loadExportRecords()">
+                    <option value="">全部</option>
+                    <option value="diagnosis">诊疗</option>
+                    <option value="nursing">护理</option>
+                    <option value="other">其他</option>
+                </select>
+                <label style="font-size:12px;font-weight:600;">模块:</label>
+                <select id="exportFilterModule" onchange="loadExportRecords()">
+                    <option value="">全部</option>
+                    <option value="image_ocr">图片识别</option>
+                    <option value="voice_input">语音输入</option>
+                    <option value="text_input">文本输入</option>
+                    <option value="qualitative">质性研究</option>
+                </select>
+                <button class="btn-sm" onclick="toggleExportSelectAll()" id="exportSelectAllBtn">全选</button>
+            </div>
+            <div class="export-record-list" id="exportRecordList">
+                <div class="empty-state" style="padding:30px;"><p style="font-size:13px;">加载中...</p></div>
+            </div>
+            <div class="export-modal-footer">
+                <span class="export-count" id="exportCount">已选 0 条记录</span>
+                <div class="export-actions">
+                    <button class="export-btn cancel" onclick="closeExportModal()">取消</button>
+                    <button class="export-btn secondary" onclick="doExportAll()">导出全部</button>
+                    <button class="export-btn primary" id="exportSelectedBtn" onclick="doExportSelected()" disabled>导出选中</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+/* ===== Global State ===== */
+var currentDepartment = 'general';
+var currentCategory = 'general';  // 向后兼容别名
+var currentMethod = 'quantitative';
+var currentResults = [];
+var files = { qualVoice: [], qualImage: [], quantImage: [], quantVoice: [] };
+var previewCache = null;
+var previewSource = '';
+var selectedTemplateId = null;
+var departmentColors = {
+    general: '#64748b', cardiology: '#dc2626', neurology: '#7c3aed',
+    surgery: '#0891b2', pediatrics: '#f59e0b', obstetrics: '#ec4899', emergency: '#ef4444'
+};
+var departmentNames = {
+    general: '通用', cardiology: '心内科', neurology: '神经内科',
+    surgery: '外科', pediatrics: '儿科', obstetrics: '妇产科', emergency: '急诊科'
+};
+// 向后兼容
+var categoryColors = departmentColors;
+var categoryNames = departmentNames;
+
+/* ===== Department Switch ===== */
+function switchDepartment(dept) {
+    currentDepartment = dept;
+    currentCategory = dept;  // 兼容
+    var sel = document.getElementById('deptSelect');
+    if (sel) sel.value = dept;
+    localStorage.setItem('medsnap_department', dept);
+    document.getElementById('detectResult').textContent = '';
+    loadTemplates();
+}
+
+/* ===== Auto-Detect Department ===== */
+function autoDetectDepartment() {
+    var text = '';
+    // 尝试从文本输入获取内容
+    var ta = document.getElementById('quantTextarea');
+    if (ta && ta.value.trim().length > 10) {
+        text = ta.value.trim();
+    }
+    if (!text) {
+        document.getElementById('detectResult').textContent = '请先输入或上传文本内容';
+        return;
+    }
+    var btn = document.getElementById('autoDetectBtn');
+    btn.disabled = true;
+    btn.textContent = '识别中...';
+    document.getElementById('detectResult').textContent = '';
+    fetch('/api/detect_department', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        btn.disabled = false;
+        btn.innerHTML = '&#9881; 自动识别';
+        if (data.status === 'success' && data.department) {
+            switchDepartment(data.department);
+            var conf = Math.round((data.confidence || 0) * 100);
+            var name = departmentNames[data.department] || data.department;
+            document.getElementById('detectResult').innerHTML =
+                '识别为 <b>' + name + '</b> (置信度' + conf + '%)';
+        } else {
+            document.getElementById('detectResult').textContent = data.msg || '识别失败';
+        }
+    })
+    .catch(function() {
+        btn.disabled = false;
+        btn.innerHTML = '&#9881; 自动识别';
+        document.getElementById('detectResult').textContent = '网络错误';
+    });
+}
+
+// 保留旧函数名兼容
+function switchCategory(cat) { switchDepartment(cat); }
+
+/* ===== Research Method Switch ===== */
+function switchMethod(method) {
+    currentMethod = method;
+    document.querySelectorAll('.method-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelector('.method-tab.' + method).classList.add('active');
+    document.querySelectorAll('.module-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.getElementById('panel-' + method).classList.add('active');
+}
+
+/* ===== Data Source Switch ===== */
+function switchSource(module, source) {
+    var prefix = module === 'qualitative' ? 'qual' : 'quant';
+    var container = document.getElementById('panel-' + module);
+    var tabs = container.querySelectorAll('.source-tab');
+    tabs.forEach(function(t) { t.classList.remove('active'); });
+    event.target.classList.add('active');
+    container.querySelectorAll('.source-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.getElementById(prefix + '-' + source).classList.add('active');
+}
+
+/* ===== Template Loading ===== */
+function loadTemplates() {
+    fetch('/api/templates/' + currentDepartment)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status !== 'success') return;
+        var sel = document.getElementById('quantTemplate');
+        sel.innerHTML = '';
+        data.templates.forEach(function(t) {
+            var opt = document.createElement('option');
+            opt.value = t.template_id;
+            opt.textContent = t.template_name;
+            sel.appendChild(opt);
+        });
+    });
+}
+
+/* ===== File Handling ===== */
+function setupFileInput(inputId, listId, btnId, fileKey) {
+    var input = document.getElementById(inputId);
+    if (!input) return;
+    input.addEventListener('change', function(e) {
+        files[fileKey] = Array.from(e.target.files);
+        renderFileList(listId, fileKey, btnId);
+        // Also enable the preview button for quantitative panels
+        var previewBtnId = btnId.replace('Btn', 'PreviewBtn');
+        var previewBtn = document.getElementById(previewBtnId);
+        if (previewBtn) previewBtn.disabled = files[fileKey].length === 0;
+        e.target.value = '';
+    });
+}
+
+function renderFileList(listId, fileKey, btnId) {
+    var list = document.getElementById(listId);
+    var btn = document.getElementById(btnId);
+    var arr = files[fileKey];
+    if (btn) btn.disabled = arr.length === 0;
+    if (!arr.length) { list.innerHTML = ''; return; }
+    var html = '';
+    arr.forEach(function(f, i) {
+        var sz = (f.size / 1024).toFixed(1);
+        sz = sz > 1024 ? (sz / 1024).toFixed(1) + ' MB' : sz + ' KB';
+        html += '<div class="file-item"><span>' + f.name + ' (' + sz + ')</span><button class="remove-btn" onclick="removeFile(\'' + fileKey + '\',' + i + ',\'' + listId + '\',\'' + btnId + '\')">&#10005;</button></div>';
+    });
+    list.innerHTML = html;
+}
+
+function removeFile(fileKey, idx, listId, btnId) {
+    files[fileKey].splice(idx, 1);
+    renderFileList(listId, fileKey, btnId);
+}
+
+/* ===== Field Preview ===== */
+function previewFields(source) {
+    var fd = new FormData();
+    if (source === 'text') {
+        var text = document.getElementById('quantTextInput').value.trim();
+        if (!text) { showToast('请输入文本内容', 'error'); return; }
+        fd.append('text_content', text);
+    } else if (source === 'voice') {
+        if (!files.quantVoice.length) { showToast('请先上传文件', 'error'); return; }
+        fd.append('files', files.quantVoice[0]);
+    } else {
+        if (!files.quantImage.length) { showToast('请先上传文件', 'error'); return; }
+        fd.append('files', files.quantImage[0]);
+    }
+    previewSource = source;
+    showProgress('正在分析文档字段...');
+    updateProgress(30, '识别中，请稍候...');
+
+    fetch('/api/preview_fields', { method: 'POST', body: fd })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        updateProgress(100, '完成');
+        setTimeout(function() {
+            hideProgress();
+            if (data.status === 'success' && data.fields && data.fields.length) {
+                previewCache = data.raw_data;
+                renderFieldPreview(data.fields);
+            } else {
+                showToast(data.msg || '未识别到可提取字段', 'error');
+            }
+        }, 300);
+    })
+    .catch(function(err) { hideProgress(); showToast('预览失败: ' + err.message, 'error'); });
+}
+
+function renderFieldPreview(fields) {
+    var categories = {};
+    fields.forEach(function(f) {
+        var cat = f.category || '其他';
+        if (!categories[cat]) categories[cat] = [];
+        categories[cat].push(f);
+    });
+    var catIcons = { '基本信息': '&#128100;', '检验结果': '&#129514;', '诊疗记录': '&#128203;', '护理评估': '&#128153;', '其他': '&#128196;' };
+    var html = '';
+    for (var cat in categories) {
+        html += '<div class="category-group"><h4>' + (catIcons[cat] || '') + ' ' + esc(cat) + '</h4><div class="field-checkboxes">';
+        categories[cat].forEach(function(f) {
+            var conf = Math.round((f.confidence || 0) * 100);
+            html += '<label class="field-checkbox checked" onclick="toggleFieldCheck(this)">';
+            html += '<input type="checkbox" checked value="' + esc(f.field_name) + '">';
+            html += '<div class="field-info"><span class="field-name">' + esc(f.field_name) + '</span>';
+            if (f.example_value) html += '<span class="field-example">示例: ' + esc(String(f.example_value)) + '</span>';
+            html += '</div>';
+            if (conf) html += '<span class="confidence-badge">' + conf + '%</span>';
+            html += '</label>';
+        });
+        html += '</div></div>';
+    }
+    document.getElementById('previewBody').innerHTML = html;
+    document.getElementById('previewSection').classList.add('active');
+}
+
+function toggleFieldCheck(el) {
+    var cb = el.querySelector('input[type="checkbox"]');
+    if (cb) {
+        setTimeout(function() { el.classList.toggle('checked', cb.checked); }, 0);
+    }
+}
+
+function selectAllFields() {
+    document.querySelectorAll('#previewBody .field-checkbox input').forEach(function(cb) {
+        cb.checked = true; cb.closest('.field-checkbox').classList.add('checked');
+    });
+}
+
+function deselectAllFields() {
+    document.querySelectorAll('#previewBody .field-checkbox input').forEach(function(cb) {
+        cb.checked = false; cb.closest('.field-checkbox').classList.remove('checked');
+    });
+}
+
+function closePreview() {
+    document.getElementById('previewSection').classList.remove('active');
+    previewCache = null;
+}
+
+function executeSelectedExtraction() {
+    var selected = [];
+    document.querySelectorAll('#previewBody .field-checkbox input:checked').forEach(function(cb) {
+        selected.push(cb.value);
+    });
+    if (!selected.length) { showToast('请至少选择一个字段', 'error'); return; }
+
+    var body = { selected_fields: selected, role_id: currentDepartment };
+    if (previewCache) body.raw_data = previewCache;
+    if (previewSource === 'text') body.text_content = document.getElementById('quantTextInput').value.trim();
+
+    showProgress('正在提取选中字段...');
+    updateProgress(50, '处理中...');
+
+    fetch('/api/extract_selected', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        updateProgress(100, '完成');
+        setTimeout(function() {
+            hideProgress();
+            closePreview();
+            if (data.results && data.results.length) {
+                currentResults = data.results;
+                showResults(data.results);
+                showToast('提取完成', 'success');
+            }
+            if (data.errors) data.errors.forEach(function(e) { showToast(e, 'error'); });
+            refreshHistory();
+            refreshStats();
+        }, 300);
+    })
+    .catch(function(err) { hideProgress(); showToast('提取失败: ' + err.message, 'error'); });
+}
+
+/* ===== Toast ===== */
+function showToast(msg, type) {
+    var c = document.getElementById('toastContainer');
+    var t = document.createElement('div');
+    t.className = 'toast ' + (type || 'info');
+    t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(function() { t.remove(); }, 3500);
+}
+
+/* ===== Progress ===== */
+function updateProgress(pct, text) {
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressPercent').textContent = pct + '%';
+    document.getElementById('progressText').textContent = text;
+}
+
+function showProgress(title) {
+    document.getElementById('progressTitle').textContent = title;
+    document.getElementById('progressSection').classList.add('active');
+    document.getElementById('resultsSection').classList.remove('active');
+}
+
+function hideProgress() {
+    document.getElementById('progressSection').classList.remove('active');
+}
+
+/* ===== Qualitative Processing ===== */
+function processQualitative(source) {
+    var fd = new FormData();
+    fd.append('analysis_type', document.getElementById('qualType').value);
+    
+    if (source === 'text') {
+        var text = document.getElementById('qualTextInput').value.trim();
+        if (!text) { showToast('请输入文本内容', 'error'); return; }
+        fd.append('text_content', text);
+    } else if (source === 'voice') {
+        if (!files.qualVoice.length) { showToast('请先上传文件', 'error'); return; }
+        files.qualVoice.forEach(function(f) { fd.append('files', f); });
+    } else {
+        if (!files.qualImage.length) { showToast('请先上传文件', 'error'); return; }
+        files.qualImage.forEach(function(f) { fd.append('files', f); });
+    }
+    
+    showProgress('正在进行质性分析...');
+    updateProgress(30, '分析中，请稍候...');
+    
+    fetch('/qualitative_analyze', { method: 'POST', body: fd })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        updateProgress(100, '完成');
+        setTimeout(function() {
+            hideProgress();
+            if (data.results && data.results.length) {
+                currentResults = data.results;
+                showResults(data.results);
+                showToast('质性分析完成', 'success');
+            }
+            if (data.errors) data.errors.forEach(function(e) { showToast(e, 'error'); });
+            if (source === 'text') document.getElementById('qualTextInput').value = '';
+            else if (source === 'voice') { files.qualVoice = []; renderFileList('qualVoiceList', 'qualVoice', 'qualVoiceBtn'); }
+            else { files.qualImage = []; renderFileList('qualImageList', 'qualImage', 'qualImageBtn'); }
+            refreshHistory();
+            refreshStats();
+        }, 500);
+    })
+    .catch(function(err) { hideProgress(); showToast('分析失败: ' + err.message, 'error'); });
+}
+
+/* ===== Quantitative Processing ===== */
+function processQuantitative(source) {
+    var templateId = document.getElementById('quantTemplate').value;
+    if (!templateId) { showToast('请选择识别模板', 'error'); return; }
+    
+    var fd = new FormData();
+    fd.append('role_id', currentDepartment);
+    fd.append('template_id', templateId);
+    
+    if (source === 'text') {
+        var text = document.getElementById('quantTextInput').value.trim();
+        if (!text) { showToast('请输入文本内容', 'error'); return; }
+        fd.append('text_content', text);
+        showProgress('正在提取结构化数据...');
+        updateProgress(50, '处理中...');
+        fetch('/upload_text', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(handleQuantResult)
+        .catch(function(err) { hideProgress(); showToast('处理失败: ' + err.message, 'error'); });
+    } else {
+        var fileArr = source === 'image' ? files.quantImage : files.quantVoice;
+        if (!fileArr.length) { showToast('请先上传文件', 'error'); return; }
+        fileArr.forEach(function(f) { fd.append('files', f); });
+        fd.append('module_type', source === 'image' ? 'image_ocr' : 'voice_input');
+        showProgress('正在处理...');
+        updateProgress(30, '识别中...');
+        fetch('/upload', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(handleQuantResult)
+        .catch(function(err) { hideProgress(); showToast('处理失败: ' + err.message, 'error'); });
+    }
+}
+
+function handleQuantResult(data) {
+    updateProgress(100, '完成');
+    setTimeout(function() {
+        hideProgress();
+        if (data.results && data.results.length) {
+            currentResults = data.results;
+            showResults(data.results);
+            showToast('提取完成', 'success');
+        }
+        if (data.errors) data.errors.forEach(function(e) { showToast(e, 'error'); });
+        document.getElementById('quantTextInput').value = '';
+        files.quantImage = []; files.quantVoice = [];
+        renderFileList('quantImageList', 'quantImage', 'quantImageBtn');
+        renderFileList('quantVoiceList', 'quantVoice', 'quantVoiceBtn');
+        refreshHistory();
+        refreshStats();
+    }, 500);
+}
+
+/* ===== Results Display ===== */
+function showResults(results) {
+    var sec = document.getElementById('resultsSection');
+    sec.classList.add('active');
+    document.getElementById('resultsTitle').innerHTML = '&#9989; 分析结果 (' + results.length + ' 份)';
+    var tabs = '';
+    results.forEach(function(r, i) {
+        tabs += '<div class="results-tab' + (i === 0 ? ' active' : '') + '" onclick="showResultTab(' + i + ')">' + esc(r.case_number || '结果' + (i + 1)) + '</div>';
+    });
+    document.getElementById('resultsTabs').innerHTML = tabs;
+    renderResult(results[0]);
+}
+
+function showResultTab(idx) {
+    document.querySelectorAll('.results-tab').forEach(function(t, i) { t.classList.toggle('active', i === idx); });
+    renderResult(currentResults[idx]);
+}
+
+function renderResult(result) {
+    var html = '';
+    
+    // Qualitative analysis display
+    if (result.qualitative_analysis) {
+        var q = result.qualitative_analysis;
+        // New 4-step format detection
+        if (q.step1_initial_coding || q.step4_hierarchical_output) {
+            html += renderQualitative4Step(q);
+        } else {
+            // Legacy format (themes/codes/sentiment)
+            html += renderQualitativeLegacy(q);
+        }
+    }
+    
+    // Transcript display
+    if (result.transcript) {
+        html += '<div style="background:#fffbeb;border:1px solid #fbbf24;border-radius:12px;padding:16px;margin-bottom:16px;">';
+        html += '<h4 style="color:#92400e;margin-bottom:8px;">&#127908; 转录文本</h4>';
+        html += '<div style="max-height:200px;overflow-y:auto;font-size:13px;white-space:pre-wrap;">' + esc(result.transcript) + '</div></div>';
+    }
+    
+    // Structured data display
+    if (result.data && Object.keys(result.data).length) {
+        html += '<div style="margin-top:16px;"><h4 style="margin-bottom:12px;">&#128203; 结构化数据</h4>';
+        html += '<table class="data-table"><thead><tr><th>字段</th><th>值</th></tr></thead><tbody>';
+        renderDataRows(result.data, '').forEach(function(row) { html += row; });
+        html += '</tbody></table></div>';
+    }
+    
+    document.getElementById('resultsBody').innerHTML = html || '<div class="empty-state"><p>无数据</p></div>';
+}
+
+function renderDataRows(obj, prefix) {
+    var rows = [];
+    var skipPrefixes = ['patient_info', 'custom_fields', 'demographics'];
+    for (var k in obj) {
+        if (k === 'confidence') continue;
+        var v = obj[k];
+        var fullLabel = prefix ? prefix + '.' + k : k;
+        if (v && typeof v === 'object' && !Array.isArray(v)) {
+            // For known wrapper keys, pass empty prefix so children show clean names
+            var childPrefix = (skipPrefixes.indexOf(k) !== -1 && !prefix) ? '' : fullLabel;
+            rows = rows.concat(renderDataRows(v, childPrefix));
+        } else if (Array.isArray(v)) {
+            v.forEach(function(item, i) {
+                if (typeof item === 'object') {
+                    rows = rows.concat(renderDataRows(item, fullLabel + '[' + i + ']'));
+                } else {
+                    rows.push('<tr><td>' + esc(fullLabel + '[' + i + ']') + '</td><td>' + esc(item) + '</td></tr>');
+                }
+            });
+        } else {
+            var displayLabel = fullLabel;
+            rows.push('<tr><td>' + esc(displayLabel) + '</td><td>' + esc(v) + '</td></tr>');
+        }
+    }
+    return rows;
+}
+
+/* ===== Qualitative 4-Step Rendering ===== */
+function renderQualitative4Step(q) {
+    var html = '';
+    // Methodology note
+    if (q.methodology_note) {
+        html += '<div class="methodology-note">&#128214; <strong>分析方法：</strong>' + esc(q.methodology_note) + '</div>';
+    }
+    html += '<div class="qual-steps-container">';
+    html += renderStep1(q.step1_initial_coding);
+    html += renderStep2(q.step2_theme_clustering);
+    html += renderStep3(q.step3_representative_quotes);
+    html += renderStep4(q.step4_hierarchical_output);
+    html += '</div>';
+    return html;
+}
+
+function renderStep1(codes) {
+    if (!codes || !codes.length) return '';
+    var html = '<div class="step-panel" data-step="1">';
+    html += '<div class="step-header" onclick="toggleStep(1)">';
+    html += '<h4>&#128221; 第一步：初始编码 <span class="count">(' + codes.length + '个编码)</span></h4>';
+    html += '<span class="toggle-icon">&#9660;</span></div>';
+    html += '<div class="step-body">';
+    html += '<table class="coding-table"><thead><tr><th>编码ID</th><th>编码标签</th><th>原文片段</th><th>段落</th></tr></thead><tbody>';
+    codes.forEach(function(c) {
+        html += '<tr>';
+        html += '<td><span class="code-id">' + esc(c.code_id) + '</span></td>';
+        html += '<td>' + esc(c.code_label) + '</td>';
+        html += '<td class="quote-text">"' + esc(c.original_text) + '"</td>';
+        html += '<td>' + esc(c.paragraph_ref) + '</td>';
+        html += '</tr>';
+    });
+    html += '</tbody></table></div></div>';
+    return html;
+}
+
+function renderStep2(themes) {
+    if (!themes || !themes.length) return '';
+    var html = '<div class="step-panel" data-step="2">';
+    html += '<div class="step-header" onclick="toggleStep(2)">';
+    html += '<h4>&#128451; 第二步：主题聚类 <span class="count">(' + themes.length + '个主题)</span></h4>';
+    html += '<span class="toggle-icon">&#9660;</span></div>';
+    html += '<div class="step-body">';
+    themes.forEach(function(theme) {
+        html += '<div class="theme-card">';
+        html += '<div class="main-theme">&#128312; ' + esc(theme.theme) + '</div>';
+        if (theme.sub_themes) {
+            theme.sub_themes.forEach(function(sub) {
+                html += '<div class="sub-theme">';
+                html += '<div class="sub-theme-name">&#8627; ' + esc(sub.sub_theme) + '</div>';
+                if (sub.description) html += '<div class="sub-theme-desc">' + esc(sub.description) + '</div>';
+                if (sub.codes && sub.codes.length) html += '<div class="linked-codes">&#128279; 关联编码: ' + sub.codes.map(esc).join(', ') + '</div>';
+                html += '</div>';
+            });
+        }
+        html += '</div>';
+    });
+    html += '</div></div>';
+    return html;
+}
+
+function renderStep3(quotes) {
+    if (!quotes || !quotes.length) return '';
+    var html = '<div class="step-panel" data-step="3">';
+    html += '<div class="step-header" onclick="toggleStep(3)">';
+    html += '<h4>&#128172; 第三步：代表性引用</h4>';
+    html += '<span class="toggle-icon">&#9660;</span></div>';
+    html += '<div class="step-body">';
+    quotes.forEach(function(q) {
+        html += '<div class="quote-group">';
+        html += '<h5>&#128312; ' + esc(q.theme) + '</h5>';
+        if (q.quotes) {
+            q.quotes.forEach(function(quote) {
+                html += '<blockquote class="representative-quote">"' + esc(quote) + '"</blockquote>';
+            });
+        }
+        html += '</div>';
+    });
+    html += '</div></div>';
+    return html;
+}
+
+function renderStep4(hierarchy) {
+    if (!hierarchy || !hierarchy.length) return '';
+    var html = '<div class="step-panel expanded" data-step="4">';
+    html += '<div class="step-header" onclick="toggleStep(4)">';
+    html += '<h4>&#127795; 第四步：层级化结构（完整分析结果）</h4>';
+    html += '<span class="toggle-icon">&#9650;</span></div>';
+    html += '<div class="step-body" style="display:block;">';
+    hierarchy.forEach(function(theme) {
+        html += '<div class="hierarchy-tree">';
+        html += '<div class="h-level-1">&#128313; ' + esc(theme.theme) + '</div>';
+        if (theme.sub_themes) {
+            theme.sub_themes.forEach(function(sub, si) {
+                var isLast = si === theme.sub_themes.length - 1;
+                html += '<div class="h-level-2">' + (isLast ? '&#9495;&#9473; ' : '&#9507;&#9473; ') + esc(sub.name) + '</div>';
+                if (sub.codes) {
+                    sub.codes.forEach(function(code, ci) {
+                        var isLastCode = ci === sub.codes.length - 1;
+                        var prefix = isLast ? '&nbsp;&nbsp;&nbsp;' : '&#9475;&nbsp;&nbsp;';
+                        html += '<div class="h-level-3">' + prefix + (isLastCode ? '&#9495;&#9473; ' : '&#9507;&#9473; ') + esc(code.label) + '</div>';
+                        if (code.quotes) {
+                            code.quotes.forEach(function(quote) {
+                                var qPrefix = isLast ? '&nbsp;&nbsp;&nbsp;' : '&#9475;&nbsp;&nbsp;';
+                                qPrefix += isLastCode ? '&nbsp;&nbsp;&nbsp;' : '&#9475;&nbsp;&nbsp;';
+                                html += '<div class="h-level-4">' + qPrefix + '&#128172; "' + esc(quote) + '"</div>';
+                            });
+                        }
+                    });
+                }
+            });
+        }
+        html += '</div>';
+    });
+    html += '</div></div>';
+    return html;
+}
+
+function toggleStep(stepNum) {
+    var panel = document.querySelector('.step-panel[data-step="' + stepNum + '"]');
+    if (!panel) return;
+    var body = panel.querySelector('.step-body');
+    var icon = panel.querySelector('.toggle-icon');
+    if (body.style.display === 'none' || (!body.style.display && !panel.classList.contains('expanded'))) {
+        body.style.display = 'block';
+        icon.innerHTML = '&#9650;';
+        panel.classList.add('expanded');
+    } else {
+        body.style.display = 'none';
+        icon.innerHTML = '&#9660;';
+        panel.classList.remove('expanded');
+    }
+}
+
+function renderQualitativeLegacy(q) {
+    var html = '<div class="qual-section">';
+    html += '<h4>&#128300; 质性分析结果（历史版本）</h4>';
+    if (q.themes && q.themes.length) {
+        html += '<div><strong>核心主题:</strong></div><div class="theme-pills">';
+        q.themes.forEach(function(t) { html += '<span class="theme-pill">' + esc(t) + '</span>'; });
+        html += '</div>';
+    }
+    if (q.keywords && q.keywords.length) {
+        html += '<div style="margin:12px 0;"><strong>关键词:</strong> ' + esc(q.keywords.join('、')) + '</div>';
+    }
+    if (q.codes && q.codes.length) {
+        html += '<div><strong>编码分类:</strong></div>';
+        html += '<table class="data-table code-table"><thead><tr><th>编码</th><th>相关文本</th></tr></thead><tbody>';
+        q.codes.forEach(function(c) {
+            html += '<tr><td>' + esc(c.code) + '</td><td>' + esc((c.segments || []).join('；')) + '</td></tr>';
+        });
+        html += '</tbody></table>';
+    }
+    if (q.sentiment) {
+        var sc = q.sentiment.indexOf('积极') !== -1 ? '#059669' : (q.sentiment.indexOf('消极') !== -1 ? '#dc2626' : '#64748b');
+        html += '<div style="margin-top:12px;"><strong>情感倾向:</strong> <span style="color:' + sc + ';font-weight:600;">' + esc(q.sentiment) + '</span></div>';
+    }
+    if (q.summary) {
+        html += '<div style="margin-top:12px;"><strong>分析总结:</strong> ' + esc(q.summary) + '</div>';
+    }
+    html += '</div>';
+    return html;
+}
+
+/* ===== History ===== */
+function refreshHistory() {
+    fetch('/records')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status !== 'success') return;
+        var list = document.getElementById('historyList');
+        if (!data.records.length) { list.innerHTML = '<div class="empty-state"><div class="icon">&#128196;</div><p>暂无处理记录</p></div>'; return; }
+        var html = '';
+        data.records.forEach(function(r) {
+            var tagBg = categoryColors[r.role_id] || '#64748b';
+            html += '<div class="history-item"><div class="info"><span class="case-no">' + esc(r.case_number);
+            if (r.role_id) html += '<span class="tag" style="background:' + tagBg + '20;color:' + tagBg + ';">' + (categoryNames[r.role_id] || r.role_id) + '</span>';
+            html += '</span><span class="meta">' + esc(r.filename || '') + ' | ' + r.create_time + '</span></div>';
+            html += '<div><button class="btn-sm" onclick="viewRecord(\'' + r.id + '\')">查看</button> ';
+            html += '<button class="btn-sm danger" onclick="deleteRecord(\'' + r.id + '\')">删除</button></div></div>';
+        });
+        list.innerHTML = html;
+    });
+}
+
+function viewRecord(id) {
+    fetch('/record/' + id)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status === 'success') {
+            var d = data.data;
+            currentResults = [{ case_number: d.case_number, data: d.extracted_data, transcript: d.audio_transcript, qualitative_analysis: d.qualitative_data }];
+            showResults(currentResults);
+        }
+    });
+}
+
+function deleteRecord(id) {
+    if (!confirm('确定删除？')) return;
+    fetch('/record/' + id, { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function(d) { if (d.status === 'success') { showToast('已删除', 'success'); refreshHistory(); refreshStats(); } });
+}
+
+function refreshStats() {
+    fetch('/stats')
+    .then(function(r) { return r.json(); })
+    .then(function(d) { if (d.status === 'success') document.getElementById('recordCount').textContent = '已处理: ' + d.total_records + ' 份'; });
+}
+
+/* ===== Export & Clean ===== */
+function exportData() {
+    document.getElementById('exportOverlay').style.display = 'flex';
+    loadExportRecords();
+}
+
+function closeExportModal() {
+    document.getElementById('exportOverlay').style.display = 'none';
+}
+
+function loadExportRecords() {
+    var role = document.getElementById('exportFilterRole').value;
+    var mod = document.getElementById('exportFilterModule').value;
+    var url = '/records?';
+    if (role) url += 'role_id=' + role + '&';
+    if (mod) url += 'module_type=' + mod;
+    fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status !== 'success') return;
+        var list = document.getElementById('exportRecordList');
+        if (!data.records.length) {
+            list.innerHTML = '<div class="empty-state" style="padding:30px;"><div class="icon">&#128196;</div><p style="font-size:13px;">暂无匹配记录</p></div>';
+            updateExportCount();
+            return;
+        }
+        var html = '';
+        var moduleNames = { image_ocr: '图片识别', voice_input: '语音输入', text_input: '文本输入', qualitative: '质性研究', dynamic_extract: '动态提取' };
+        for (var i = 0; i < data.records.length; i++) {
+            var r = data.records[i];
+            var tagBg = categoryColors[r.role_id] || '#64748b';
+            var modName = moduleNames[r.module_type] || r.module_type || '';
+            html += '<label class="export-record-item">';
+            html += '<input type="checkbox" class="export-cb" value="' + r.id + '" onchange="updateExportCount()">';
+            html += '<div class="info">';
+            html += '<span class="case-no">' + esc(r.case_number);
+            if (r.role_id) html += ' <span class="tag" style="background:' + tagBg + '20;color:' + tagBg + ';">' + (categoryNames[r.role_id] || r.role_id) + '</span>';
+            html += '</span>';
+            html += '<span class="meta">' + esc(r.filename || '') + ' | ' + modName + ' | ' + (r.create_time || '') + '</span>';
+            html += '</div></label>';
+        }
+        list.innerHTML = html;
+        updateExportCount();
+    });
+}
+
+function toggleExportSelectAll() {
+    var cbs = document.querySelectorAll('.export-cb');
+    var allChecked = true;
+    for (var i = 0; i < cbs.length; i++) { if (!cbs[i].checked) { allChecked = false; break; } }
+    for (var j = 0; j < cbs.length; j++) cbs[j].checked = !allChecked;
+    updateExportCount();
+}
+
+function updateExportCount() {
+    var cbs = document.querySelectorAll('.export-cb:checked');
+    var count = cbs.length;
+    document.getElementById('exportCount').textContent = '已选 ' + count + ' 条记录';
+    document.getElementById('exportSelectedBtn').disabled = (count === 0);
+}
+
+function doExportSelected() {
+    var cbs = document.querySelectorAll('.export-cb:checked');
+    var ids = [];
+    for (var i = 0; i < cbs.length; i++) ids.push(cbs[i].value);
+    if (!ids.length) { showToast('请至少选择一条记录', 'error'); return; }
+
+    showToast('正在生成导出文件...', 'info');
+    fetch('/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ record_ids: ids })
+    })
+    .then(function(resp) {
+        var ct = resp.headers.get('Content-Type') || '';
+        if (ct.indexOf('json') !== -1) {
+            return resp.json().then(function(d) { showToast(d.msg || '导出失败', 'error'); });
+        }
+        return resp.blob().then(function(blob) {
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            var disp = resp.headers.get('Content-Disposition') || '';
+            var match = disp.match(/filename\*?=(?:UTF-8'')?["']?([^"';\n]+)/i);
+            a.download = match ? decodeURIComponent(match[1]) : '临床数据_选中导出.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+            showToast('导出成功（' + ids.length + ' 条记录）', 'success');
+            closeExportModal();
+        });
+    })
+    .catch(function(err) { showToast('导出失败: ' + err.message, 'error'); });
+}
+
+function doExportAll() {
+    window.location.href = '/export_all';
+    closeExportModal();
+}
+
+function cleanAll() {
+    if (!confirm('清空所有数据？不可恢复。')) return;
+    fetch('/clean', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.status === 'success') {
+            showToast('已清空', 'success');
+            refreshHistory();
+            refreshStats();
+            document.getElementById('resultsSection').classList.remove('active');
+        }
+    });
+}
+
+/* ===== Template Modal ===== */
+var departmentPresetFields = {
+    general: {
+        '门诊/住院病历': ['主诉','现病史','既往史','个人史','家族史','过敏史','体格检查','专科检查','辅助检查','诊断','诊疗计划','处理意见'],
+        '检查检验结果': ['项目名称','结果','参考值','单位','异常提示','标本类型','采集时间','报告时间'],
+        '护理评估表': ['生命体征','意识状态','皮肤完整性','跌倒风险','压疮风险','护理措施'],
+        '综合科研数据': ['人口学特征','实验室检查','主要终点事件','随访日期','血压','血脂','用药情况','治疗结局']
+    },
+    cardiology: {
+        '心内科诊疗': ['主诉','现病史','EF值','BNP_NT_proBNP','冠脉造影结果','心律失常类型','心功能分级_NYHA','用药方案','PCI_CABG记录','诊断'],
+        '心内科护理': ['心电监护','生命体征_体温_脉搏_呼吸_血压','胸痛评估','出入量记录','活动耐量评估','抗凝药物管理','护理问题','护理措施'],
+        '心血管科研': ['LVEF','BNP','LDL_C','支架类型','MACE事件','随访日期','治疗结局']
+    },
+    neurology: {
+        '神经内科诊疗': ['主诉','现病史','GCS评分','NIHSS评分','肌力分级','头颅CT_MRI','脑电图','发病时间','溶栓_取栓记录','诊断'],
+        '神经内科护理': ['意识状态_GCS','瞳孔变化','肌力评估','吞咽功能筛查','跌倒风险','深静脉血栓预防','护理问题','护理措施'],
+        '神经科科研': ['卒中类型','NIHSS评分','发病至治疗时间','mRS评分','影像学结果','再灌注治疗','治疗结局']
+    },
+    surgery: {
+        '外科诊疗': ['主诉','现病史','手术名称','ASA分级','麻醉方式','术中出血量','手术时长','引流管','病理结果','诊断'],
+        '外科护理': ['术前准备','术后生命体征','引流管护理','切口换药','疼痛评估','DVT预防','早期活动','护理问题','护理措施'],
+        '外科科研': ['手术方式','手术时长','术中出血量','并发症','住院天数','切口愈合等级','病理分期','治疗结局']
+    },
+    pediatrics: {
+        '儿科诊疗': ['主诉','现病史','出生体重','胎龄','体重_身高百分位','疫苗接种','喂养方式','发育评估','诊断','治疗方案'],
+        '儿科护理': ['体温管理','喂养评估','体重监测','黄疸评估','疼痛评估_FLACC','用药核查_体重剂量','护理问题','护理措施'],
+        '儿科科研': ['胎龄','出生体重','生长发育指标','疫苗接种','主要诊断','治疗方案','治疗结局']
+    },
+    obstetrics: {
+        '妇产科诊疗': ['主诉','现病史','孕周','GPAL','胎心率','宫高_腹围','羊水指数','分娩方式','Apgar评分','诊断'],
+        '妇产科护理': ['产前监护','胎心监测','宫缩评估','产后出血观察','母乳喂养指导','切口_会阴护理','护理问题','护理措施'],
+        '妇产科科研': ['孕周','分娩方式','妊娠并发症','新生儿结局','Apgar评分','产后出血量','治疗结局']
+    },
+    emergency: {
+        '急诊诊疗': ['主诉','现病史','分诊级别','MEWS_NEWS评分','发病至就诊时间','急救措施','检查结果','转归','诊断'],
+        '急诊护理': ['分诊评估','生命体征','意识状态','疼痛评估','急救配合','静脉通路','用药记录','护理问题','护理措施'],
+        '急诊科研': ['就诊时间','分诊级别','主要诊断','急救措施','抢救结局','滞留时间','治疗结局']
+    }
+};
+// 向后兼容
+var categoryPresetFields = departmentPresetFields;
+
+function openTemplateModal() {
+    showListView();
+    loadTemplateGrid();
+    document.getElementById('templateModal').style.display = 'flex';
+}
+
+function closeTemplateModal() {
+    document.getElementById('templateModal').style.display = 'none';
+    closeDetailPanel();
+}
+
+function showListView() {
+    document.getElementById('tplListView').style.display = 'block';
+    document.getElementById('tplFormView').classList.remove('active');
+    closeDetailPanel();
+    loadTemplateGrid();
+}
+
+function showCreateForm() {
+    document.getElementById('tplListView').style.display = 'none';
+    document.getElementById('tplFormView').classList.add('active');
+    document.getElementById('tplFormTitle').innerHTML = '&#10133; 新建模板';
+    document.getElementById('tplNameInput').value = '';
+    document.getElementById('tplScoreCheck').checked = false;
+    document.getElementById('tplEditId').value = '';
+    document.getElementById('tplFieldRows').innerHTML = '';
+    // Show preset fields section for new templates
+    document.getElementById('presetFieldsSection').style.display = 'block';
+    renderPresetCheckboxes();
+    // 显示并重置 AI 提取区
+    document.getElementById('aiExtractSection').style.display = 'block';
+    resetAiExtract();
+}
+
+function showEditForm(templateId) {
+    fetch('/api/templates/' + templateId + '/detail')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status !== 'success') { showToast(data.msg || '获取失败', 'error'); return; }
+        var t = data.template;
+        document.getElementById('tplListView').style.display = 'none';
+        document.getElementById('tplFormView').classList.add('active');
+        document.getElementById('tplFormTitle').innerHTML = '&#9998; 编辑模板';
+        document.getElementById('tplNameInput').value = t.template_name;
+        document.getElementById('tplScoreCheck').checked = t.include_score;
+        document.getElementById('tplEditId').value = templateId;
+        document.getElementById('tplFieldRows').innerHTML = '';
+        // Hide preset section when editing, show fields directly
+        document.getElementById('presetFieldsSection').style.display = 'none';
+        // 编辑模式隐藏 AI 提取区
+        document.getElementById('aiExtractSection').style.display = 'none';
+        if (t.fields && t.fields.length) {
+            t.fields.forEach(function(f) { addFieldRow(f); });
+        } else {
+            addFieldRow('');
+        }
+    });
+}
+
+function addFieldRow(name) {
+    var div = document.createElement('div');
+    div.className = 'field-row';
+    div.innerHTML = '<input type="text" value="' + esc(name || '') + '" placeholder="字段名称，如：血压、诊断...">' +
+        '<button class="remove-field-btn" onclick="this.parentElement.remove()" title="删除">&#10005;</button>';
+    document.getElementById('tplFieldRows').appendChild(div);
+}
+
+// ========== AI 智能提取字段功能 ==========
+
+function toggleAiExtract() {
+    var body = document.getElementById('aiExtractBody');
+    var arrow = document.getElementById('aiExtractArrow');
+    if (body.style.display === 'block') {
+        body.style.display = 'none';
+        arrow.classList.remove('open');
+    } else {
+        body.style.display = 'block';
+        arrow.classList.add('open');
+    }
+}
+
+function analyzeFieldsFromText() {
+    var textarea = document.getElementById('aiExtractTextarea');
+    var text = textarea.value.trim();
+    if (!text || text.length < 5) {
+        showToast('请输入更多文本内容（至少5个字符）', 'error');
+        return;
+    }
+    var btn = document.getElementById('aiAnalyzeBtn');
+    var status = document.getElementById('aiExtractStatus');
+    var results = document.getElementById('aiExtractResults');
+
+    // 设置加载状态
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;"></span> 分析中...';
+    status.textContent = '';
+    results.style.display = 'none';
+
+    fetch('/api/extract_fields_from_text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text, role_id: currentDepartment })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status === 'success' && data.fields && data.fields.length > 0) {
+            renderAiExtractResults(data.fields);
+            status.textContent = '共识别 ' + data.fields.length + ' 个字段';
+        } else if (data.status === 'success' && (!data.fields || data.fields.length === 0)) {
+            showToast('未从文本中识别到有效字段，请尝试输入更详细的内容', 'info');
+            status.textContent = '未识别到字段';
+        } else {
+            showToast(data.msg || '分析失败', 'error');
+            status.textContent = '分析失败';
+        }
+    })
+    .catch(function(err) {
+        showToast('网络请求失败: ' + err.message, 'error');
+        status.textContent = '请求失败';
+    })
+    .finally(function() {
+        btn.disabled = false;
+        btn.innerHTML = '&#128269; AI 分析字段';
+    });
+}
+
+function renderAiExtractResults(fields) {
+    var results = document.getElementById('aiExtractResults');
+    var container = document.getElementById('aiExtractCheckboxes');
+
+    // 按 category 分组
+    var groups = {};
+    fields.forEach(function(f) {
+        var cat = f.category || '其他';
+        if (!groups[cat]) groups[cat] = [];
+        groups[cat].push(f);
+    });
+
+    var html = '';
+    var categoryOrder = ['基本信息', '检验结果', '诊疗记录', '护理评估', '科研数据', '其他'];
+    categoryOrder.forEach(function(cat) {
+        if (!groups[cat]) return;
+        html += '<div style="margin-bottom:12px;">';
+        html += '<div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #e9d5ff;">' + esc(cat) + '</div>';
+        html += '<div class="preset-checkboxes">';
+        groups[cat].forEach(function(f) {
+            var conf = f.confidence ? Math.round(f.confidence * 100) : '';
+            html += '<label class="preset-checkbox checked" onclick="togglePresetCheckbox(this)">';
+            html += '<input type="checkbox" checked value="' + esc(f.name) + '">';
+            html += '<span class="preset-label">' + esc(f.name);
+            if (conf) html += '<span class="ai-confidence">' + conf + '%</span>';
+            html += '</span></label>';
+        });
+        html += '</div></div>';
+    });
+
+    container.innerHTML = html;
+    results.style.display = 'block';
+}
+
+function addAiSelectedFields() {
+    var checkboxes = document.querySelectorAll('#aiExtractCheckboxes .preset-checkbox input:checked');
+    if (!checkboxes.length) {
+        showToast('请先选择要添加的字段', 'info');
+        return;
+    }
+
+    // 获取已有自定义字段用于去重
+    var existing = new Set();
+    document.querySelectorAll('#tplFieldRows .field-row input').forEach(function(inp) {
+        var v = inp.value.trim();
+        if (v) existing.add(v);
+    });
+    // 同时检查预设字段
+    document.querySelectorAll('#presetCheckboxes .preset-checkbox input:checked').forEach(function(cb) {
+        existing.add(cb.value);
+    });
+
+    var added = 0;
+    checkboxes.forEach(function(cb) {
+        var name = cb.value.trim();
+        if (name && !existing.has(name)) {
+            addFieldRow(name);
+            existing.add(name);
+            added++;
+        }
+    });
+
+    if (added > 0) {
+        showToast('已添加 ' + added + ' 个字段', 'success');
+    } else {
+        showToast('所选字段均已存在，无需重复添加', 'info');
+    }
+}
+
+function selectAllAiFields() {
+    document.querySelectorAll('#aiExtractCheckboxes .preset-checkbox').forEach(function(label) {
+        label.classList.add('checked');
+        label.querySelector('input').checked = true;
+    });
+}
+
+function deselectAllAiFields() {
+    document.querySelectorAll('#aiExtractCheckboxes .preset-checkbox').forEach(function(label) {
+        label.classList.remove('checked');
+        label.querySelector('input').checked = false;
+    });
+}
+
+function resetAiExtract() {
+    document.getElementById('aiExtractTextarea').value = '';
+    document.getElementById('aiExtractResults').style.display = 'none';
+    document.getElementById('aiExtractCheckboxes').innerHTML = '';
+    document.getElementById('aiExtractStatus').textContent = '';
+    document.getElementById('aiExtractBody').style.display = 'none';
+    document.getElementById('aiExtractArrow').classList.remove('open');
+}
+
+// ========== END AI 智能提取字段功能 ==========
+
+function renderPresetCheckboxes() {
+    var presets = departmentPresetFields[currentDepartment] || departmentPresetFields.general;
+    var html = '';
+    for (var category in presets) {
+        html += '<div style="margin-bottom:14px;">';
+        html += '<div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);">' + esc(category) + '</div>';
+        html += '<div class="preset-checkboxes">';
+        presets[category].forEach(function(p) {
+            html += '<label class="preset-checkbox checked" onclick="togglePresetCheckbox(this)">';
+            html += '<input type="checkbox" checked value="' + esc(p) + '">';
+            html += '<span class="preset-label">' + esc(p) + '</span>';
+            html += '</label>';
+        });
+        html += '</div></div>';
+    }
+    document.getElementById('presetCheckboxes').innerHTML = html;
+}
+
+function togglePresetCheckbox(el) {
+    var cb = el.querySelector('input[type="checkbox"]');
+    if (cb) {
+        setTimeout(function() { el.classList.toggle('checked', cb.checked); }, 0);
+    }
+}
+
+function selectAllPresets() {
+    document.querySelectorAll('#presetCheckboxes .preset-checkbox input').forEach(function(cb) {
+        cb.checked = true;
+        cb.closest('.preset-checkbox').classList.add('checked');
+    });
+}
+
+function deselectAllPresets() {
+    document.querySelectorAll('#presetCheckboxes .preset-checkbox input').forEach(function(cb) {
+        cb.checked = false;
+        cb.closest('.preset-checkbox').classList.remove('checked');
+    });
+}
+
+function saveTemplate() {
+    var name = document.getElementById('tplNameInput').value.trim();
+    var includeScore = document.getElementById('tplScoreCheck').checked;
+    var editId = document.getElementById('tplEditId').value;
+    var fields = [];
+    
+    // Collect checked preset fields (only for new templates)
+    if (!editId) {
+        document.querySelectorAll('#presetCheckboxes .preset-checkbox input:checked').forEach(function(cb) {
+            fields.push(cb.value);
+        });
+    }
+    
+    // Collect custom fields
+    var inputs = document.querySelectorAll('#tplFieldRows .field-row input');
+    inputs.forEach(function(inp) {
+        var v = inp.value.trim();
+        if (v && fields.indexOf(v) === -1) fields.push(v);
+    });
+
+    if (!name) { showToast('请填写模板名称', 'error'); return; }
+    if (!fields.length) { showToast('请至少选择或添加一个字段', 'error'); return; }
+
+    var body = JSON.stringify({ role_id: currentDepartment, template_name: name, fields: fields, include_score: includeScore });
+    var url = editId ? '/api/templates/' + editId : '/api/templates';
+    var method = editId ? 'PUT' : 'POST';
+
+    fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: body })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status === 'success') {
+            showToast(data.msg, 'success');
+            showListView();
+            loadTemplateGrid();
+            loadTemplates();
+        } else {
+            showToast(data.msg || '操作失败', 'error');
+        }
+    });
+}
+
+function deleteTemplate(templateId) {
+    if (!confirm('确定删除此模板？已使用此模板提取的记录不受影响。')) return;
+    fetch('/api/templates/' + templateId, { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status === 'success') {
+            showToast('模板已删除', 'success');
+            loadTemplateGrid();
+            loadTemplates();
+        } else {
+            showToast(data.msg || '删除失败', 'error');
+        }
+    });
+}
+
+function loadTemplateGrid() {
+    fetch('/api/templates/' + currentDepartment)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status !== 'success') return;
+        var html = '';
+        if (!data.templates.length) {
+            html = '<p style="color:var(--text-secondary);text-align:center;padding:40px;">暂无模板，点击"新建模板"创建</p>';
+        } else {
+            data.templates.forEach(function(t) {
+                var isCustom = t.template_type === 'custom';
+                var isSelected = selectedTemplateId === t.template_id;
+                html += '<div class="template-card' + (isCustom ? ' custom' : '') + (isSelected ? ' selected' : '') + '" onclick="selectTemplateCard(\'' + t.template_id + '\', event)">';
+                html += '<div class="tpl-name">' + esc(t.template_name) + '</div>';
+                html += '<div class="tpl-meta"><span class="type-badge ' + (isCustom ? 'custom' : 'system') + '">' + (isCustom ? '自定义' : '系统') + '</span>';
+                if (t.field_count) html += ' &middot; ' + t.field_count + '个字段';
+                html += '</div>';
+                if (isCustom) {
+                    html += '<div class="tpl-actions">';
+                    html += '<button onclick="showEditForm(\'' + t.template_id + '\'); event.stopPropagation();">编辑</button>';
+                    html += '<button class="danger" onclick="deleteTemplate(\'' + t.template_id + '\'); event.stopPropagation();">删除</button>';
+                    html += '</div>';
+                }
+                html += '</div>';
+            });
+        }
+        document.getElementById('templateGrid').innerHTML = html;
+    });
+}
+
+function selectTemplateCard(templateId, event) {
+    // Update selection visual
+    document.querySelectorAll('.template-card').forEach(function(card) {
+        card.classList.remove('selected');
+    });
+    event.currentTarget.classList.add('selected');
+    selectedTemplateId = templateId;
+    
+    // Show detail panel
+    showTemplateDetail(templateId);
+}
+
+function showTemplateDetail(templateId) {
+    var panel = document.getElementById('templateDetailPanel');
+    var fieldList = document.getElementById('detailFieldList');
+    fieldList.innerHTML = '<div class="detail-loading">加载中...</div>';
+    panel.classList.add('active');
+    
+    fetch('/api/templates/' + templateId + '/detail')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status !== 'success') {
+            showToast(data.msg || '获取失败', 'error');
+            return;
+        }
+        var t = data.template;
+        var isSystem = t.template_type === 'system';
+        document.getElementById('detailTemplateName').innerHTML = '&#128203; ' + esc(t.template_name) + (isSystem ? ' <span style="font-size:12px;color:var(--text-secondary);">(系统模板)</span>' : '');
+        document.getElementById('detailFieldCount').textContent = (t.fields ? t.fields.length : 0) + ' 个字段';
+        
+        var html = '';
+        if (t.fields && t.fields.length) {
+            t.fields.forEach(function(f, idx) {
+                html += '<div class="field-list-item" data-field-index="' + idx + '">';
+                html += '<span class="field-index">' + (idx + 1) + '</span>';
+                html += '<input type="text" class="field-edit-input" value="' + esc(f) + '">';
+                html += '<button class="field-delete-btn" onclick="deleteFieldItem(this)" title="删除">&#128465;</button>';
+                html += '</div>';
+            });
+        } else {
+            html = '<p style="color:var(--text-secondary);text-align:center;padding:20px;">暂无字段</p>';
+        }
+        fieldList.innerHTML = html;
+        
+        // Always show add field and save buttons
+        document.querySelector('.add-new-field-row').style.display = 'flex';
+        document.querySelector('.btn-save-fields').style.display = 'block';
+    })
+    .catch(function(err) {
+        fieldList.innerHTML = '<p style="color:var(--danger);text-align:center;padding:20px;">加载失败</p>';
+    });
+}
+
+function closeDetailPanel() {
+    document.getElementById('templateDetailPanel').classList.remove('active');
+    selectedTemplateId = null;
+    document.querySelectorAll('.template-card').forEach(function(card) {
+        card.classList.remove('selected');
+    });
+}
+
+function addFieldToDetail() {
+    var input = document.getElementById('newFieldInput');
+    var name = input.value.trim();
+    if (!name) {
+        showToast('请输入字段名称', 'error');
+        return;
+    }
+    
+    var fieldList = document.getElementById('detailFieldList');
+    var existingFields = fieldList.querySelectorAll('.field-edit-input');
+    var idx = existingFields.length;
+    
+    // Check for duplicate
+    for (var i = 0; i < existingFields.length; i++) {
+        if (existingFields[i].value.trim() === name) {
+            showToast('该字段已存在', 'info');
+            return;
+        }
+    }
+    
+    // If there's a "no fields" message, clear it
+    var noFieldsMsg = fieldList.querySelector('p');
+    if (noFieldsMsg) fieldList.innerHTML = '';
+    
+    var div = document.createElement('div');
+    div.className = 'field-list-item';
+    div.setAttribute('data-field-index', idx);
+    div.innerHTML = '<span class="field-index">' + (idx + 1) + '</span>' +
+        '<input type="text" class="field-edit-input" value="' + esc(name) + '">' +
+        '<button class="field-delete-btn" onclick="deleteFieldItem(this)" title="删除">&#128465;</button>';
+    fieldList.appendChild(div);
+    
+    input.value = '';
+    updateFieldCount();
+    showToast('已添加字段', 'success');
+}
+
+function deleteFieldItem(btn) {
+    var item = btn.closest('.field-list-item');
+    item.remove();
+    reindexFieldItems();
+    updateFieldCount();
+}
+
+function reindexFieldItems() {
+    var items = document.querySelectorAll('#detailFieldList .field-list-item');
+    items.forEach(function(item, idx) {
+        item.setAttribute('data-field-index', idx);
+        item.querySelector('.field-index').textContent = idx + 1;
+    });
+}
+
+function updateFieldCount() {
+    var count = document.querySelectorAll('#detailFieldList .field-edit-input').length;
+    document.getElementById('detailFieldCount').textContent = count + ' 个字段';
+}
+
+function saveDetailFields() {
+    if (!selectedTemplateId) {
+        showToast('请先选择模板', 'error');
+        return;
+    }
+    
+    var inputs = document.querySelectorAll('#detailFieldList .field-edit-input');
+    var fields = [];
+    inputs.forEach(function(inp) {
+        var v = inp.value.trim();
+        if (v) fields.push(v);
+    });
+    
+    if (!fields.length) {
+        showToast('请至少保留一个字段', 'error');
+        return;
+    }
+    
+    fetch('/api/templates/' + selectedTemplateId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            role_id: currentDepartment,
+            fields: fields
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status === 'success') {
+            showToast('字段已保存', 'success');
+            // Update TEMPLATE_FIELDS cache: re-fetch detail
+            showTemplateDetail(selectedTemplateId);
+            loadTemplateGrid();
+            loadTemplates();
+        } else {
+            showToast(data.msg || '保存失败', 'error');
+        }
+    });
+}
+
+/* ===== Utility ===== */
+function esc(s) { if (s == null) return ''; var d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
+
+/* ===== User Guide ===== */
+var guideCurrentPage = 0;
+var guideTotalPages = 7;
+
+function showGuide() {
+    guideCurrentPage = 0;
+    renderGuideDots();
+    showGuidePage(0);
+    document.getElementById('guideOverlay').classList.remove('hidden');
+}
+
+function closeGuide() {
+    document.getElementById('guideOverlay').classList.add('hidden');
+    localStorage.setItem('medsnap_guide_seen', '1');
+}
+
+function renderGuideDots() {
+    var html = '';
+    for (var i = 0; i < guideTotalPages; i++) {
+        html += '<span class="guide-dot' + (i === guideCurrentPage ? ' active' : '') + '" onclick="showGuidePage(' + i + ')"></span>';
+    }
+    document.getElementById('guideDots').innerHTML = html;
+}
+
+function showGuidePage(idx) {
+    guideCurrentPage = idx;
+    document.querySelectorAll('.guide-page').forEach(function(p, i) {
+        p.classList.toggle('active', i === idx);
+    });
+    renderGuideDots();
+    document.getElementById('guidePageInfo').textContent = (idx + 1) + ' / ' + guideTotalPages;
+    document.getElementById('guidePrevBtn').style.visibility = idx === 0 ? 'hidden' : 'visible';
+    var nextBtn = document.getElementById('guideNextBtn');
+    if (idx === guideTotalPages - 1) {
+        nextBtn.textContent = '开始使用';
+        nextBtn.onclick = closeGuide;
+    } else {
+        nextBtn.textContent = '下一页';
+        nextBtn.onclick = function() { guideNav(1); };
+    }
+}
+
+function guideNav(dir) {
+    var next = guideCurrentPage + dir;
+    if (next >= 0 && next < guideTotalPages) showGuidePage(next);
+}
+
+/* ===== Init ===== */
+document.addEventListener('DOMContentLoaded', function() {
+    // Restore saved department (兼容旧 localStorage key)
+    var saved = localStorage.getItem('medsnap_department') || localStorage.getItem('medsnap_category');
+    if (saved && departmentNames[saved]) {
+        switchDepartment(saved);
+    } else {
+        // 默认加载 general
+        loadTemplates();
+    }
+    
+    // Setup file inputs
+    setupFileInput('qualVoiceInput', 'qualVoiceList', 'qualVoiceBtn', 'qualVoice');
+    setupFileInput('qualImageInput', 'qualImageList', 'qualImageBtn', 'qualImage');
+    setupFileInput('quantImageInput', 'quantImageList', 'quantImageBtn', 'quantImage');
+    setupFileInput('quantVoiceInput', 'quantVoiceList', 'quantVoiceBtn', 'quantVoice');
+    
+    // Load templates
+    loadTemplates();
+    refreshHistory();
+    refreshStats();
+
+    // Show guide every time the app loads
+    setTimeout(function() { showGuide(); }, 800);
+});
+</script>
+</body>
+</html>

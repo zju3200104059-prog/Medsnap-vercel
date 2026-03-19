@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedSnap 研究成果管理</title>
+    <style>
+        :root {
+            --primary: #2563eb; --primary-light: #dbeafe;
+            --success: #059669; --danger: #dc2626; --warning: #d97706;
+            --purple: #7c3aed; --purple-light: #f5f3ff;
+            --bg: #f0f4f8; --card: #ffffff; --border: #e2e8f0;
+            --text: #1e293b; --text-secondary: #64748b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* ===== Topbar ===== */
+        .topbar { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; height: 52px; display: flex; align-items: center; padding: 0 24px; gap: 12px; flex-shrink: 0; box-shadow: 0 2px 12px rgba(0,0,0,0.15); z-index: 100; }
+        .topbar h1 { font-size: 16px; font-weight: 700; white-space: nowrap; }
+        .topbar .spacer { flex: 1; }
+        .topbar-btn { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.25); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; white-space: nowrap; }
+        .topbar-btn:hover { background: rgba(255,255,255,0.25); }
+
+        /* ===== Breadcrumb ===== */
+        .breadcrumb { background: var(--card); border-bottom: 1px solid var(--border); padding: 8px 24px; font-size: 13px; flex-shrink: 0; }
+        .breadcrumb a { color: var(--primary); text-decoration: none; font-weight: 500; }
+        .breadcrumb a:hover { text-decoration: underline; }
+        .breadcrumb .sep { color: var(--text-secondary); margin: 0 6px; }
+
+        /* ===== Search Area ===== */
+        .search-area { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
+        .search-area input[type="text"] { padding: 7px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; width: 260px; outline: none; }
+        .search-area input:focus { border-color: var(--primary); }
+        .search-area select { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; background: white; }
+        .search-area select:focus { border-color: var(--primary); }
+        .btn { padding: 7px 16px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-outline { background: white; color: var(--text-secondary); border: 1px solid var(--border); }
+        .btn-outline:hover { background: var(--bg); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #047857; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+        /* ===== Main Layout: List + Detail ===== */
+        .main-layout { display: flex; flex: 1; overflow: hidden; }
+
+        /* ===== List Area ===== */
+        .list-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+        .list-toolbar { padding: 10px 24px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-secondary); flex-shrink: 0; background: var(--bg); }
+        .list-toolbar .count { font-weight: 600; }
+
+        .table-wrap { flex: 1; overflow-y: auto; padding: 0 24px 16px; }
+        table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.05); }
+        thead { background: #f8fafc; position: sticky; top: 0; z-index: 2; }
+        th { padding: 10px 14px; font-size: 12px; font-weight: 600; color: var(--text-secondary); text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
+        tbody tr { cursor: pointer; transition: background 0.15s; }
+        tbody tr:hover { background: #f0f7ff; }
+        tbody tr.active { background: #dbeafe; }
+        .td-actions { display: flex; gap: 4px; flex-wrap: nowrap; white-space: nowrap; }
+        .td-actions .btn { flex-shrink: 0; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+
+        /* Editable cells */
+        .editable-cell { cursor: pointer; position: relative; }
+        .editable-cell:hover { background: rgba(37,99,235,0.06); }
+        .edit-input { width: 100%; padding: 4px 8px; border: 1px solid var(--primary); border-radius: 4px; font-size: 12px; outline: none; box-sizing: border-box; }
+        .name-placeholder { color: var(--text-secondary); font-style: italic; font-size: 12px; }
+        .multi-tags { display: flex; flex-wrap: wrap; gap: 2px; }
+
+        /* Multi-select panel */
+        .ms-panel { position: fixed; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,0.12); z-index: 200; min-width: 150px; max-height: 280px; overflow-y: auto; }
+        .ms-panel label { display: flex; align-items: center; gap: 8px; padding: 7px 12px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+        .ms-panel label:hover { background: var(--bg); }
+        .ms-footer { border-top: 1px solid var(--border); padding: 6px 8px; display: flex; justify-content: flex-end; gap: 6px; }
+
+        /* Pagination */
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 6px; padding: 12px; flex-shrink: 0; background: var(--bg); }
+        .page-btn { padding: 5px 10px; border: 1px solid var(--border); border-radius: 5px; background: white; font-size: 12px; cursor: pointer; }
+        .page-btn:hover { background: var(--bg); }
+        .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .page-info { font-size: 12px; color: var(--text-secondary); }
+
+        /* ===== Detail Panel (Right Side, 400px) ===== */
+        .detail-panel { width: 0; flex-shrink: 0; background: var(--card); border-left: 1px solid var(--border); overflow-y: auto; transition: width 0.25s ease; }
+        .detail-panel.open { width: 420px; }
+        .detail-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--card); z-index: 1; }
+        .detail-header h2 { font-size: 15px; font-weight: 700; }
+        .detail-close { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text-secondary); padding: 2px 6px; border-radius: 4px; }
+        .detail-close:hover { background: var(--bg); }
+        .detail-body { padding: 0 18px 18px; }
+
+        /* Collapsible Sections */
+        .section { border: 1px solid var(--border); border-radius: 8px; margin-top: 12px; overflow: hidden; }
+        .section-title { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; background: #f8fafc; cursor: pointer; font-size: 13px; font-weight: 600; user-select: none; }
+        .section-title:hover { background: #f1f5f9; }
+        .section-title .arrow { font-size: 11px; color: var(--text-secondary); transition: transform 0.2s; display: inline-block; }
+        .section-title .arrow.open { transform: rotate(90deg); }
+        .section-content { padding: 12px 14px; border-top: 1px solid var(--border); display: none; }
+        .section-content.open { display: block; }
+
+        .info-row { display: flex; padding: 6px 0; border-bottom: 1px solid #f8fafc; font-size: 13px; }
+        .info-label { width: 90px; color: var(--text-secondary); font-size: 12px; flex-shrink: 0; }
+        .info-value { flex: 1; word-break: break-all; }
+
+        .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .metric-card { background: #f8fafc; border-radius: 8px; padding: 10px; border: 1px solid var(--border); }
+        .metric-card .label { font-size: 11px; color: var(--text-secondary); }
+        .metric-card .value { font-size: 14px; font-weight: 700; margin-top: 2px; }
+
+        .conclusion-text { font-size: 13px; line-height: 1.7; white-space: pre-wrap; }
+
+        /* Notes & Status */
+        .note-item { background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 10px; margin-bottom: 6px; font-size: 12px; line-height: 1.5; }
+        .note-item .note-time { font-size: 11px; color: var(--text-secondary); margin-top: 3px; }
+        .note-form { display: flex; gap: 6px; margin-top: 10px; }
+        .note-form textarea { flex: 1; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; resize: vertical; min-height: 50px; font-family: inherit; }
+        .status-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+        .status-bar label { font-size: 12px; color: var(--text-secondary); }
+        .status-bar select { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
+
+        /* Empty State */
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+        .empty-state .icon { font-size: 42px; margin-bottom: 10px; }
+        .empty-state p { font-size: 13px; }
+
+        /* Toast */
+        .toast-container { position: fixed; top: 60px; right: 20px; z-index: 300; }
+        .toast { padding: 10px 18px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.12); animation: toastIn 0.25s ease; }
+        .toast.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+        .toast.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+    <h1>&#128203; MedSnap 研究成果管理</h1>
+    <span class="spacer"></span>
+    <button class="topbar-btn" onclick="location.href='/data-extraction'">前往提取</button>
+    <button class="topbar-btn" onclick="location.href='/statistics'">前往分析</button>
+    <button class="topbar-btn" onclick="location.href='/index'">&#8592; 返回首页</button>
+</div>
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+    <a href="/index">首页</a><span class="sep">></span><span>研究成果管理</span>
+</div>
+
+<!-- Search Area -->
+<div class="search-area">
+    <input type="text" id="searchKeyword" placeholder="检索成果ID、科室、标题、结论..." onkeydown="if(event.key==='Enter')searchResults()">
+    <select id="searchDept">
+        <option value="">全部科室</option>
+        <option value="cardiology">心内科</option>
+        <option value="neurology">神经内科</option>
+        <option value="surgery">外科</option>
+        <option value="pediatrics">儿科</option>
+        <option value="obstetrics">妇产科</option>
+        <option value="emergency">急诊科</option>
+        <option value="general">通用</option>
+    </select>
+    <select id="searchType">
+        <option value="">全部类型</option>
+        <option value="quantitative">定量研究</option>
+        <option value="qualitative">质性研究</option>
+    </select>
+    <button class="btn btn-primary" onclick="searchResults()">检索</button>
+    <button class="btn btn-outline" onclick="resetSearch()">重置</button>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Main Layout -->
+<div class="main-layout">
+
+    <!-- List Area -->
+    <div class="list-area">
+        <div class="list-toolbar">
+            <span>共 <strong class="count" id="totalCount">0</strong> 条成果</span>
+            <span style="flex:1"></span>
+            <button class="btn btn-success btn-sm" onclick="exportSelected()" id="batchExportBtn" disabled>&#128229; 批量导出</button>
+            <label style="font-size:12px;display:flex;align-items:center;gap:3px;cursor:pointer;color:var(--text-secondary);">
+                <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)"> 全选
+            </label>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:32px"><input type="checkbox" id="selectAllHead" onchange="toggleSelectAll(this.checked)"></th>
+                        <th>成果ID</th>
+                        <th>名称</th>
+                        <th>数据类型</th>
+                        <th>所属科室</th>
+                        <th style="cursor:pointer" onclick="toggleSort()">操作时间 <span id="sortIcon">&#9660;</span></th>
+                        <th style="min-width:160px">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                    <tr><td colspan="7"><div class="empty-state"><div class="icon">&#128203;</div><p>暂无符合条件的成果，请先完成统计分析并归档</p></div></td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
+    </div>
+
+    <!-- Detail Panel (Right Side) -->
+    <div class="detail-panel" id="detailPanel">
+        <div class="detail-header">
+            <h2 id="detailTitle">成果详情</h2>
+            <button class="detail-close" onclick="closeDetail()">&#10005;</button>
+        </div>
+        <div class="detail-body" id="detailBody">
+            <p style="color:var(--text-secondary);font-size:13px;padding:20px 0;text-align:center;">点击列表中的「查看详情」查看成果</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+var currentPage = 1, totalPages = 1, sortOrder = 'desc', currentDetailId = null, allResults = [];
+
+var deptMap = { cardiology:'心内科', neurology:'神经内科', surgery:'外科', pediatrics:'儿科', obstetrics:'妇产科', emergency:'急诊科', general:'通用' };
+var deptColors = { cardiology:'#dc2626', neurology:'#7c3aed', surgery:'#0891b2', pediatrics:'#f59e0b', obstetrics:'#ec4899', emergency:'#ef4444', general:'#64748b' };
+var typeMap = { quantitative:'定量', qualitative:'质性', descriptive:'描述统计', comparison:'差异比较', regression:'回归分析', chart:'可视化', preprocess:'预处理', prerequisite:'前提检验', statistics:'统计分析' };
+
+function esc(s) { var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+function showToast(msg,type) { var t=document.createElement('div'); t.className='toast '+(type||'success'); t.textContent=msg; document.getElementById('toastContainer').appendChild(t); setTimeout(function(){t.remove();},3000); }
+
+// ========== Load & Render ==========
+function loadResults(page) {
+    currentPage = page || 1;
+    var p = new URLSearchParams();
+    p.set('page', currentPage); p.set('page_size', 20); p.set('sort', sortOrder);
+    var kw = document.getElementById('searchKeyword').value.trim();
+    var dept = document.getElementById('searchDept').value;
+    var dtype = document.getElementById('searchType').value;
+    if (kw) p.set('keyword', kw);
+    if (dept) p.set('dept_id', dept);
+    if (dtype) p.set('data_type', dtype);
+
+    fetch('/api/results?' + p.toString()).then(function(r){return r.json();}).then(function(data) {
+        if (data.status !== 'success') { showToast(data.msg||'加载失败','error'); return; }
+        allResults = data.data || [];
+        totalPages = data.total_pages || 1;
+        document.getElementById('totalCount').textContent = data.total;
+        renderTable();
+        renderPagination();
+    }).catch(function(e){ showToast('请求失败','error'); });
+}
+
+function renderTable() {
+    var tb = document.getElementById('resultsBody');
+    if (!allResults.length) { tb.innerHTML='<tr><td colspan="7"><div class="empty-state"><div class="icon">&#128203;</div><p>暂无符合条件的成果，请先完成统计分析并归档</p></div></td></tr>'; return; }
+    var h = '';
+    allResults.forEach(function(r) {
+        // 处理多选：数据类型可能是逗号分隔的多值
+        var dtParts = (r.data_type||'').split(',').filter(Boolean);
+        var dtDisplay = dtParts.map(function(t){ return typeMap[t.trim()]||t.trim(); }).join(', ') || '-';
+
+        // 处理多选：科室可能是逗号分隔的多值
+        var deptParts = (r.dept_id||'').split(',').filter(Boolean);
+        var deptHtml = '';
+        deptParts.forEach(function(d){
+            var dn2 = deptMap[d.trim()]||d.trim();
+            var dc2 = deptColors[d.trim()]||'#64748b';
+            deptHtml += '<span class="badge" style="background:'+dc2+'18;color:'+dc2+';margin:1px;">'+esc(dn2)+'</span>';
+        });
+        if (!deptHtml) deptHtml = '-';
+
+        var shortId = (r.result_id||'').substring(0,8).toUpperCase();
+        var isActive = r.result_id === currentDetailId ? ' active' : '';
+        var nameDisplay = r.title ? esc(r.title) : '<span class="name-placeholder">点击编辑</span>';
+        var rid = r.result_id.replace(/'/g, "\\'");
+
+        h += '<tr class="result-row'+isActive+'" data-id="'+r.result_id+'" onclick="viewResult(\''+rid+'\')">' +
+            '<td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" value="'+esc(r.result_id)+'" onchange="updateBatchBtn()"></td>' +
+            '<td style="font-family:monospace;font-size:12px;color:var(--primary);font-weight:600;">'+shortId+'</td>' +
+            '<td class="editable-cell" onclick="event.stopPropagation();editName(this,\''+rid+'\')">'+nameDisplay+'</td>' +
+            '<td class="editable-cell" onclick="event.stopPropagation();showTypeSelect(this,\''+rid+'\',\''+esc(r.data_type||'')+'\')"><div class="multi-tags">'+esc(dtDisplay)+'</div></td>' +
+            '<td class="editable-cell" onclick="event.stopPropagation();showDeptSelect(this,\''+rid+'\',\''+esc(r.dept_id||'')+'\')"><div class="multi-tags">'+deptHtml+'</div></td>' +
+            '<td style="font-size:12px;color:var(--text-secondary);">'+esc(r.create_time||'-')+'</td>' +
+            '<td class="td-actions" onclick="event.stopPropagation()">' +
+                '<button class="btn btn-primary btn-sm" onclick="viewResult(\''+rid+'\')">查看详情</button>' +
+                '<button class="btn btn-outline btn-sm" onclick="exportSingle(\''+rid+'\')">导出</button>' +
+            '</td></tr>';
+    });
+    tb.innerHTML = h;
+}
+
+function renderPagination() {
+    var d = document.getElementById('pagination');
+    if (totalPages <= 1) { d.innerHTML = ''; return; }
+    var h = '<button class="page-btn" onclick="loadResults('+(currentPage-1)+')" '+(currentPage<=1?'disabled':'')+'>&#8249;</button>';
+    var s=Math.max(1,currentPage-2), e=Math.min(totalPages,currentPage+2);
+    for (var i=s;i<=e;i++) h+='<button class="page-btn'+(i===currentPage?' active':'')+'" onclick="loadResults('+i+')">'+i+'</button>';
+    h+='<span class="page-info">'+currentPage+'/'+totalPages+'</span>';
+    h+='<button class="page-btn" onclick="loadResults('+(currentPage+1)+')" '+(currentPage>=totalPages?'disabled':'')+'>&#8250;</button>';
+    d.innerHTML = h;
+}
+
+// ========== Search & Sort ==========
+function searchResults() { loadResults(1); }
+function resetSearch() { document.getElementById('searchKeyword').value=''; document.getElementById('searchDept').value=''; document.getElementById('searchType').value=''; loadResults(1); }
+function toggleSort() {
+    sortOrder = sortOrder==='desc'?'asc':'desc';
+    document.getElementById('sortIcon').innerHTML = sortOrder==='desc'?'&#9660;':'&#9650;';
+    loadResults(currentPage);
+}
+
+// ========== Inline Edit: Name ==========
+function editName(td, id) {
+    if (td.querySelector('input')) return;
+    var current = '';
+    allResults.forEach(function(r){ if(r.result_id===id) current=r.title||''; });
+    td.innerHTML = '<input class="edit-input" type="text" value="'+esc(current)+'" />';
+    var inp = td.querySelector('input');
+    inp.focus();
+    inp.select();
+    inp.onblur = function() {
+        var newVal = inp.value.trim();
+        if (newVal !== current) {
+            saveField(id, 'title', newVal, function(){
+                allResults.forEach(function(r){ if(r.result_id===id) r.title=newVal; });
+                renderTable();
+            });
+        } else {
+            renderTable();
+        }
+    };
+    inp.onkeydown = function(e) {
+        if (e.key==='Enter') inp.blur();
+        if (e.key==='Escape') { inp.value=current; inp.blur(); }
+    };
+}
+
+// ========== Save Field via API ==========
+function saveField(id, field, value, cb) {
+    var body = {};
+    body[field] = value;
+    fetch('/api/results/'+id, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) })
+    .then(function(r){return r.json();})
+    .then(function(d){
+        if(d.status==='success'){ showToast('已保存','success'); if(cb) cb(); }
+        else showToast(d.msg||'保存失败','error');
+    })
+    .catch(function(){ showToast('请求失败','error'); });
+}
+
+// ========== Multi-Select: Data Type ==========
+var msPanel = null;
+function showTypeSelect(td, id, currentVal) {
+    closeMultiSelect();
+    var options = [
+        {value:'quantitative', label:'定量研究'},
+        {value:'qualitative', label:'质性研究'},
+        {value:'descriptive', label:'描述统计'},
+        {value:'comparison', label:'差异比较'},
+        {value:'regression', label:'回归分析'},
+        {value:'chart', label:'可视化'},
+        {value:'preprocess', label:'预处理'},
+        {value:'prerequisite', label:'前提检验'},
+        {value:'statistics', label:'统计分析'}
+    ];
+    showMultiSelect(td, id, 'data_type', currentVal, options);
+}
+
+// ========== Multi-Select: Department ==========
+function showDeptSelect(td, id, currentVal) {
+    closeMultiSelect();
+    var options = [
+        {value:'cardiology', label:'心内科'},
+        {value:'neurology', label:'神经内科'},
+        {value:'surgery', label:'外科'},
+        {value:'pediatrics', label:'儿科'},
+        {value:'obstetrics', label:'妇产科'},
+        {value:'emergency', label:'急诊科'},
+        {value:'general', label:'通用'}
+    ];
+    showMultiSelect(td, id, 'dept_id', currentVal, options);
+}
+
+// ========== Multi-Select Panel ==========
+function showMultiSelect(td, id, field, currentVal, options) {
+    var selected = currentVal ? currentVal.split(',').map(function(s){return s.trim();}) : [];
+    var rect = td.getBoundingClientRect();
+    var panel = document.createElement('div');
+    panel.className = 'ms-panel';
+    panel.style.left = rect.left + 'px';
+    panel.style.top = (rect.bottom + 2) + 'px';
+    panel.onclick = function(e){ e.stopPropagation(); };
+
+    options.forEach(function(opt) {
+        var lbl = document.createElement('label');
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = opt.value;
+        if (selected.indexOf(opt.value) >= 0) cb.checked = true;
+        lbl.appendChild(cb);
+        lbl.appendChild(document.createTextNode(' ' + opt.label));
+        panel.appendChild(lbl);
+    });
+
+    var footer = document.createElement('div');
+    footer.className = 'ms-footer';
+    var btnOk = document.createElement('button');
+    btnOk.className = 'btn btn-primary btn-sm';
+    btnOk.textContent = '确定';
+    btnOk.onclick = function(e) {
+        e.stopPropagation();
+        var vals = [];
+        panel.querySelectorAll('input[type="checkbox"]:checked').forEach(function(c){ vals.push(c.value); });
+        var newVal = vals.join(',');
+        saveField(id, field, newVal, function(){
+            allResults.forEach(function(r){
+                if(r.result_id===id) {
+                    if(field==='data_type') r.data_type=newVal;
+                    else if(field==='dept_id') { r.dept_id=newVal; r.dept_name=null; }
+                }
+            });
+            renderTable();
+        });
+        closeMultiSelect();
+    };
+    footer.appendChild(btnOk);
+
+    var btnCancel = document.createElement('button');
+    btnCancel.className = 'btn btn-outline btn-sm';
+    btnCancel.textContent = '取消';
+    btnCancel.onclick = function(e){ e.stopPropagation(); closeMultiSelect(); };
+    footer.appendChild(btnCancel);
+
+    panel.appendChild(footer);
+    document.body.appendChild(panel);
+    msPanel = panel;
+    setTimeout(function(){ document.addEventListener('click', closeMultiSelectOutside); }, 10);
+}
+function closeMultiSelect() {
+    if(msPanel){ msPanel.remove(); msPanel=null; }
+    document.removeEventListener('click', closeMultiSelectOutside);
+}
+function closeMultiSelectOutside(e) {
+    if(msPanel && !msPanel.contains(e.target)) closeMultiSelect();
+}
+
+// ========== Select ==========
+function toggleSelectAll(checked) {
+    document.querySelectorAll('.row-check').forEach(function(c){c.checked=checked;});
+    document.getElementById('selectAll').checked=checked;
+    document.getElementById('selectAllHead').checked=checked;
+    updateBatchBtn();
+}
+function updateBatchBtn() {
+    var n = document.querySelectorAll('.row-check:checked').length;
+    var btn = document.getElementById('batchExportBtn');
+    btn.disabled = n===0;
+    btn.textContent = n>0 ? '\uD83D\uDCE5 批量导出('+n+')' : '\uD83D\uDCE5 批量导出';
+}
+
+// ========== Detail Panel ==========
+function viewResult(id) {
+    currentDetailId = id;
+    document.querySelectorAll('.result-row').forEach(function(r){r.classList.toggle('active',r.dataset.id===id);});
+    fetch('/api/results/'+id).then(function(r){return r.json();}).then(function(data) {
+        if (data.status!=='success') { showToast(data.msg||'加载失败','error'); return; }
+        renderDetail(data.data);
+        document.getElementById('detailPanel').classList.add('open');
+    }).catch(function(e){showToast('请求失败','error');});
+}
+function closeDetail() {
+    document.getElementById('detailPanel').classList.remove('open');
+    currentDetailId = null;
+    document.querySelectorAll('.result-row').forEach(function(r){r.classList.remove('active');});
+}
+
+function renderDetail(item) {
+    document.getElementById('detailTitle').textContent = '成果详情';
+    // 处理多选科室
+    var deptParts = (item.dept_id||'').split(',').filter(Boolean);
+    var dnArr = deptParts.map(function(d){ return item.dept_name || deptMap[d.trim()] || d.trim(); });
+    var dn = dnArr.join(', ') || '-';
+    // 处理多选数据类型
+    var dtParts = (item.data_type||'').split(',').filter(Boolean);
+    var dt = dtParts.map(function(t){ return typeMap[t.trim()]||t.trim(); }).join(', ') || '-';
+
+    // Layer 1: 基础信息 (default open)
+    var s1 = '<div class="section"><div class="section-title" onclick="toggleSection(this)">&#128196; 基础信息 <span class="arrow open">&#9654;</span></div>' +
+        '<div class="section-content open">' +
+        infoRow('成果ID', item.result_id) +
+        infoRow('名称', item.title||'-') +
+        infoRow('数据类型', dt) +
+        infoRow('所属科室', dn) +
+        infoRow('归档时间', item.create_time||'-') +
+        infoRow('更新时间', item.update_time||'-') +
+        (item.summary ? infoRow('摘要', item.summary) : '') +
+        '</div></div>';
+
+    // Layer 2: 核心指标
+    var s2 = '<div class="section"><div class="section-title" onclick="toggleSection(this)">&#128202; 核心指标 <span class="arrow">&#9654;</span></div>' +
+        '<div class="section-content">';
+    var m = item.core_metrics;
+    if (m && typeof m==='object') {
+        var keys = Object.keys(m);
+        var simple = keys.filter(function(k){return typeof m[k]!=='object';});
+        if (simple.length) {
+            s2 += '<div class="metrics-grid">';
+            simple.forEach(function(k){ s2+='<div class="metric-card"><div class="label">'+esc(k)+'</div><div class="value">'+esc(String(m[k]))+'</div></div>'; });
+            s2 += '</div>';
+        }
+        var complex = keys.filter(function(k){return typeof m[k]==='object' && m[k]!==null;});
+        if (complex.length) {
+            complex.forEach(function(k){ s2+='<div style="margin-top:8px"><div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">'+esc(k)+'</div><pre style="font-size:11px;background:#f8fafc;padding:8px;border-radius:6px;overflow-x:auto;white-space:pre-wrap;">'+esc(JSON.stringify(m[k],null,2))+'</pre></div>'; });
+        }
+        if (!keys.length) s2+='<p style="color:var(--text-secondary);font-size:12px;">暂无核心指标</p>';
+    } else if (m) {
+        s2+='<pre style="font-size:12px;white-space:pre-wrap;">'+esc(String(m))+'</pre>';
+    } else {
+        s2+='<p style="color:var(--text-secondary);font-size:12px;">暂无核心指标</p>';
+    }
+    s2 += '</div></div>';
+
+    // Layer 3: 分析结论
+    var s3 = '<div class="section"><div class="section-title" onclick="toggleSection(this)">&#128209; 分析结论 <span class="arrow">&#9654;</span></div>' +
+        '<div class="section-content">' +
+        (item.conclusion ? '<div class="conclusion-text">'+esc(item.conclusion)+'</div>' : '<p style="color:var(--text-secondary);font-size:12px;">暂无分析结论</p>') +
+        '</div></div>';
+
+    // Layer 4: 备注管理 + 状态
+    var notes = item.notes || [];
+    if (typeof notes==='string') { try{notes=JSON.parse(notes);}catch(e){notes=[];} }
+    var statusVal = item.status || '待复核';
+    var s4 = '<div class="section"><div class="section-title" onclick="toggleSection(this)">&#128221; 备注管理 <span class="arrow">&#9654;</span></div>' +
+        '<div class="section-content">' +
+        '<div class="status-bar"><label>成果状态：</label>' +
+        '<select id="statusSelect" onchange="updateStatus(\''+item.result_id+'\')">' +
+        '<option value="待复核"'+(statusVal==='待复核'?' selected':'')+'>待复核</option>' +
+        '<option value="已归档"'+(statusVal==='已归档'?' selected':'')+'>已归档</option>' +
+        '<option value="作废"'+(statusVal==='作废'?' selected':'')+'>作废</option>' +
+        '</select></div>';
+    if (notes.length) {
+        notes.forEach(function(n) {
+            if (typeof n==='string') s4+='<div class="note-item">'+esc(n)+'</div>';
+            else if (n&&n.text) s4+='<div class="note-item">'+esc(n.text)+'<div class="note-time">'+esc(n.time||'')+'</div></div>';
+        });
+    }
+    s4 += '<div class="note-form"><textarea id="noteInput" placeholder="添加备注..."></textarea><button class="btn btn-primary btn-sm" onclick="addNote(\''+item.result_id+'\')" style="align-self:flex-end;">添加</button></div>';
+    s4 += '</div></div>';
+
+    var exportBtn = '<div style="margin-top:14px;text-align:right;"><button class="btn btn-outline btn-sm" onclick="exportSingle(\''+item.result_id+'\')">&#128229; 导出此成果</button></div>';
+
+    document.getElementById('detailBody').innerHTML = s1 + s2 + s3 + s4 + exportBtn;
+}
+
+function infoRow(l,v) { return '<div class="info-row"><div class="info-label">'+esc(l)+'</div><div class="info-value">'+esc(v||'-')+'</div></div>'; }
+function toggleSection(el) { var c=el.nextElementSibling, a=el.querySelector('.arrow'); c.classList.toggle('open'); a.classList.toggle('open'); }
+
+// ========== Status Update ==========
+function updateStatus(id) {
+    var status = document.getElementById('statusSelect').value;
+    fetch('/api/results/'+id, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:status}) })
+    .then(function(r){return r.json();}).then(function(d) {
+        if (d.status==='success') showToast('状态已更新','success');
+        else showToast(d.msg||'更新失败','error');
+    }).catch(function(){showToast('请求失败','error');});
+}
+
+// ========== Add Note ==========
+function addNote(id) {
+    var inp = document.getElementById('noteInput');
+    var text = inp.value.trim();
+    if (!text) { showToast('请输入备注内容','error'); return; }
+    fetch('/api/results/'+id).then(function(r){return r.json();}).then(function(d) {
+        if (d.status!=='success') throw new Error(d.msg);
+        var notes = d.data.notes || [];
+        if (typeof notes==='string') { try{notes=JSON.parse(notes);}catch(e){notes=[];} }
+        notes.push({ text:text, time:new Date().toLocaleString('zh-CN') });
+        return fetch('/api/results/'+id, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({notes:notes}) });
+    }).then(function(r){return r.json();}).then(function(d) {
+        if (d.status==='success') { showToast('备注已添加','success'); inp.value=''; viewResult(id); }
+        else showToast(d.msg||'添加失败','error');
+    }).catch(function(e){showToast('操作失败','error');});
+}
+
+// ========== Export ==========
+function exportSingle(id) { window.open('/api/results/'+id+'/export', '_blank'); }
+function exportSelected() {
+    var ids=[]; document.querySelectorAll('.row-check:checked').forEach(function(c){ids.push(c.value);});
+    if (!ids.length) { showToast('请先选择要导出的成果','error'); return; }
+    fetch('/api/results/export', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({result_ids:ids}) })
+    .then(function(r){ if(!r.ok)throw new Error('导出失败'); return r.blob(); })
+    .then(function(b){ var a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='研究成果_'+new Date().toISOString().slice(0,10)+'.xlsx'; a.click(); showToast('导出成功','success'); })
+    .catch(function(e){showToast('导出失败','error');});
+}
+
+// ========== Init ==========
+document.addEventListener('DOMContentLoaded', function(){ loadResults(1); });
+</script>
+</body>
+</html>

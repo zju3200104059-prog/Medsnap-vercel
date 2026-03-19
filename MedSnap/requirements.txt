@@ -1,0 +1,14 @@
+flask
+pillow
+pandas
+openai
+requests
+numpy
+openpyxl
+python-docx
+PyMuPDF
+dashscope
+pydub
+pytesseract
+scipy
+gunicorn

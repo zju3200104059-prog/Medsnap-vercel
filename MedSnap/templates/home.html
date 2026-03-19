@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedSnap 临床数据智能平台</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #3b82f6;
+            --success: #059669;
+            --success-light: #10b981;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --purple: #7c3aed;
+            --purple-light: #a78bfa;
+            --bg: #f0f4f8;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 24px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* Layer 1: Brand Bar */
+        .brand-bar {
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            color: white;
+            padding: 28px 0;
+            text-align: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .brand-bar h1 { font-size: 28px; font-weight: 700; letter-spacing: 1px; }
+        .brand-bar .slogan { font-size: 14px; color: rgba(255,255,255,0.85); margin-top: 8px; }
+
+        /* Container */
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+        /* Layer 2: Module Cards */
+        .module-section { padding: 48px 0 32px; }
+        .section-title { text-align: center; font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 32px; }
+        .section-subtitle { text-align: center; font-size: 14px; color: var(--text-secondary); margin-top: -24px; margin-bottom: 32px; }
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        .module-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 36px 28px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .module-card:hover { transform: translateY(-6px); box-shadow: 0 12px 40px rgba(0,0,0,0.12); }
+        .module-card.blue { border-color: #dbeafe; }
+        .module-card.blue:hover { border-color: var(--primary); background: linear-gradient(135deg, #eff6ff, #dbeafe); }
+        .module-card.green { border-color: #a7f3d0; }
+        .module-card.green:hover { border-color: var(--success); background: linear-gradient(135deg, #ecfdf5, #d1fae5); }
+        .module-card.purple { border-color: #e9d5ff; }
+        .module-card.purple:hover { border-color: var(--purple); background: linear-gradient(135deg, #faf5ff, #f3e8ff); }
+        .module-card .card-icon { font-size: 48px; margin-bottom: 16px; }
+        .module-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+        .module-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+        .module-card .card-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 16px; }
+        .module-card .tag {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .module-card.blue .tag { background: #dbeafe; color: #1e40af; }
+        .module-card.green .tag { background: #d1fae5; color: #065f46; }
+        .module-card.purple .tag { background: #f3e8ff; color: #6b21a8; }
+
+        /* Layer 3: Advantage Cards */
+        .advantage-section { padding: 32px 0; }
+        .advantage-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+        .advantage-card {
+            background: var(--card);
+            border-radius: 14px;
+            padding: 24px 20px;
+            text-align: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            border: 1px solid var(--border);
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .advantage-card .adv-icon { font-size: 36px; margin-bottom: 12px; }
+        .advantage-card h4 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+        .advantage-card p { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+
+        /* Layer 4: Quick Nav */
+        .quicknav-section { padding: 32px 0; text-align: center; }
+        .quicknav-btns { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+        .quicknav-btn {
+            padding: 12px 28px;
+            border-radius: 12px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+        }
+        .quicknav-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .quicknav-btn.btn-blue { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+        .quicknav-btn.btn-green { background: linear-gradient(135deg, #059669, #10b981); }
+        .quicknav-btn.btn-purple { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+        .quicknav-btn.btn-orange { background: linear-gradient(135deg, #d97706, #f59e0b); }
+
+        /* Layer 5: Workflow */
+        .workflow-section { padding: 40px 0; }
+        .workflow-steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+        }
+        .workflow-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+        .step-circle {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .step-circle.s1 { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+        .step-circle.s2 { background: linear-gradient(135deg, #059669, #10b981); }
+        .step-circle.s3 { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+        .step-label { font-size: 14px; font-weight: 600; color: var(--text); }
+        .step-desc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; max-width: 140px; }
+        .step-connector {
+            width: 80px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--border), var(--text-secondary), var(--border));
+            margin: 0 16px;
+            margin-bottom: 40px;
+            border-radius: 2px;
+        }
+
+        /* Layer 6: Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+            background: var(--card);
+        }
+        .footer .privacy-bar {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 10px 16px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: #166534;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .module-grid { grid-template-columns: 1fr; }
+            .advantage-grid { grid-template-columns: repeat(2, 1fr); }
+            .workflow-steps { flex-direction: column; }
+            .step-connector { width: 3px; height: 40px; margin: 8px 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Layer 1: Brand Bar -->
+    <div class="brand-bar">
+        <h1>&#9879; MedSnap 临床数据智能平台</h1>
+        <p class="slogan">AI驱动的临床数据提取、统计分析与成果管理一体化平台</p>
+    </div>
+
+    <div class="container">
+
+        <!-- Layer 2: Module Cards -->
+        <div class="module-section">
+            <h2 class="section-title">&#127968; 选择功能模块</h2>
+            <p class="section-subtitle">三大核心模块，覆盖从数据提取到成果管理的完整科研流程</p>
+            <div class="module-grid">
+                <div class="module-card blue" onclick="location.href='/data-extraction'">
+                    <div class="card-icon">&#128202;</div>
+                    <h3>数据提取模块</h3>
+                    <p>支持图片OCR、语音转录、文本输入三种方式，AI智能识别并结构化提取临床数据，覆盖7大科室24套专业模板。</p>
+                    <div class="card-tags">
+                        <span class="tag">图片OCR</span>
+                        <span class="tag">语音转录</span>
+                        <span class="tag">文本提取</span>
+                        <span class="tag">质性分析</span>
+                    </div>
+                </div>
+                <div class="module-card green" onclick="location.href='/statistical-analysis'">
+                    <div class="card-icon">&#128200;</div>
+                    <h3>统计分析模块</h3>
+                    <p>对提取的结构化数据进行专业统计分析，支持从数据预处理到结果导出的完整分析流程，可直接导入病历记录。</p>
+                    <div class="card-tags">
+                        <span class="tag">描述统计</span>
+                        <span class="tag">差异比较</span>
+                        <span class="tag">回归分析</span>
+                        <span class="tag">可视化</span>
+                    </div>
+                </div>
+                <div class="module-card purple" onclick="location.href='/research-results'">
+                    <div class="card-icon">&#128203;</div>
+                    <h3>研究成果管理</h3>
+                    <p>集中管理统计分析成果，支持关键字搜索、科室筛选、时间范围过滤，提供详情查看与批量导出功能。</p>
+                    <div class="card-tags">
+                        <span class="tag">成果归档</span>
+                        <span class="tag">搜索筛选</span>
+                        <span class="tag">详情查看</span>
+                        <span class="tag">批量导出</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layer 3: Advantage Cards -->
+        <div class="advantage-section">
+            <h2 class="section-title">&#11088; 平台优势</h2>
+            <div class="advantage-grid">
+                <div class="advantage-card">
+                    <div class="adv-icon">&#127973;</div>
+                    <h4>7大临床科室</h4>
+                    <p>覆盖心内科、神经内科、外科、儿科、妇产科、急诊科及通用科室</p>
+                </div>
+                <div class="advantage-card">
+                    <div class="adv-icon">&#128247;</div>
+                    <h4>多模态数据输入</h4>
+                    <p>支持图片OCR、语音转录、文本粘贴三种数据录入方式</p>
+                </div>
+                <div class="advantage-card">
+                    <div class="adv-icon">&#128201;</div>
+                    <h4>完整统计流程</h4>
+                    <p>从数据预处理到描述统计、差异比较、回归分析一站式完成</p>
+                </div>
+                <div class="advantage-card">
+                    <div class="adv-icon">&#128274;</div>
+                    <h4>隐私安全保障</h4>
+                    <p>所有数据本地处理存储，敏感信息自动脱敏后再进行AI分析</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layer 4: Quick Navigation -->
+        <div class="quicknav-section">
+            <h2 class="section-title">&#128640; 快速开始</h2>
+            <div class="quicknav-btns">
+                <button class="quicknav-btn btn-blue" onclick="location.href='/data-extraction'">&#128196; 开始数据提取</button>
+                <button class="quicknav-btn btn-green" onclick="location.href='/statistical-analysis'">&#128200; 进入统计分析</button>
+                <button class="quicknav-btn btn-purple" onclick="location.href='/research-results'">&#128203; 查看研究成果</button>
+                <button class="quicknav-btn btn-orange" onclick="showGuide()">&#127891; 使用教程</button>
+            </div>
+        </div>
+
+        <!-- Layer 5: Workflow Guide -->
+        <div class="workflow-section">
+            <h2 class="section-title">&#128736; 三步工作流</h2>
+            <p class="section-subtitle">从原始数据到研究成果的标准化科研流程</p>
+            <div class="workflow-steps">
+                <div class="workflow-step">
+                    <div class="step-circle s1">1</div>
+                    <div class="step-label">数据提取</div>
+                    <div class="step-desc">上传病历图片、语音或文本，AI智能结构化提取</div>
+                </div>
+                <div class="step-connector"></div>
+                <div class="workflow-step">
+                    <div class="step-circle s2">2</div>
+                    <div class="step-label">统计分析</div>
+                    <div class="step-desc">导入提取数据，完成预处理与多维度统计分析</div>
+                </div>
+                <div class="step-connector"></div>
+                <div class="workflow-step">
+                    <div class="step-circle s3">3</div>
+                    <div class="step-label">成果管理</div>
+                    <div class="step-desc">归档分析成果，搜索筛选与批量导出</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Layer 6: Footer -->
+    <div class="footer">
+        <div class="privacy-bar">
+            <span>&#128737;</span>
+            <span><strong>隐私保障：</strong>所有数据均在本地处理和存储，敏感信息已进行自动脱敏处理。</span>
+        </div>
+        <p>MedSnap 临床数据智能平台 v2.0 | 数据仅存储于本地 | 请勿用于临床诊断 | <a href="javascript:void(0)" onclick="showGuide()" style="color:var(--primary);text-decoration:none;">使用指南</a></p>
+    </div>
+
+    <!-- User Guide Modal -->
+    <style>
+        .guide-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 10000; }
+        .guide-overlay.hidden { display: none; }
+        .guide-box { background: white; border-radius: 20px; max-width: 780px; width: 94%; max-height: 88vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 30px 80px rgba(0,0,0,0.3); }
+        .guide-header { padding: 28px 32px 0; display: flex; justify-content: space-between; align-items: flex-start; }
+        .guide-header h2 { font-size: 22px; background: linear-gradient(135deg, #1e40af, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .guide-header .guide-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-secondary); padding: 4px 8px; }
+        .guide-progress { display: flex; gap: 6px; padding: 14px 32px 0; }
+        .guide-dot { width: 10px; height: 10px; border-radius: 50%; background: #e2e8f0; cursor: pointer; transition: all 0.3s; }
+        .guide-dot.active { background: var(--primary); width: 28px; border-radius: 5px; }
+        .guide-body { flex: 1; overflow-y: auto; padding: 20px 32px 28px; }
+        .guide-page { display: none; }
+        .guide-page.active { display: block; }
+        .guide-page h3 { font-size: 18px; margin-bottom: 14px; color: var(--text); }
+        .guide-page h4 { font-size: 15px; margin: 16px 0 8px; color: #475569; }
+        .guide-page p { font-size: 14px; line-height: 1.8; color: #475569; margin-bottom: 10px; }
+        .guide-page ul { padding-left: 20px; margin-bottom: 12px; }
+        .guide-page li { font-size: 14px; line-height: 1.8; color: #475569; margin-bottom: 4px; }
+        .guide-page .tip-box { background: #eff6ff; border: 1px solid #93c5fd; border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #1e40af; margin: 12px 0; }
+        .guide-page .warn-box { background: #fffbeb; border: 1px solid #fbbf24; border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #92400e; margin: 12px 0; }
+        .guide-page .step-num { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; background: var(--primary); color: white; border-radius: 50%; font-size: 13px; font-weight: 700; margin-right: 8px; }
+        .guide-page .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+        .guide-page .feature-item { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+        .guide-page .feature-item strong { display: block; font-size: 14px; margin-bottom: 4px; }
+        .guide-page .feature-item span { font-size: 12px; color: var(--text-secondary); }
+        .guide-footer { padding: 0 32px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .guide-footer .page-info { font-size: 13px; color: var(--text-secondary); }
+        .guide-footer .guide-btns { display: flex; gap: 10px; }
+        .guide-footer .guide-btn-prev { padding: 10px 20px; border: 1px solid var(--border); border-radius: 10px; background: white; cursor: pointer; font-size: 14px; }
+        .guide-footer .guide-btn-next { padding: 10px 24px; border: none; border-radius: 10px; background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .guide-footer .guide-btn-next:hover { background: linear-gradient(135deg, #1d4ed8, #2563eb); }
+        @media (max-width: 768px) { .guide-page .feature-grid { grid-template-columns: 1fr; } }
+    </style>
+
+    <div class="guide-overlay hidden" id="guideOverlay">
+        <div class="guide-box">
+            <div class="guide-header">
+                <h2>MedSnap 使用指南</h2>
+                <button class="guide-close" onclick="closeGuide()">&#10005;</button>
+            </div>
+            <div class="guide-progress" id="guideDots"></div>
+            <div class="guide-body" id="guideBody">
+
+                <!-- Page 1: Platform Overview -->
+                <div class="guide-page active" data-page="0">
+                    <h3>欢迎使用 MedSnap 临床数据智能平台</h3>
+                    <p>MedSnap 是一款面向医疗专业人员的 AI 驱动临床数据智能平台，覆盖从数据提取到成果管理的完整科研流程。平台包含三大核心模块：</p>
+                    <div class="feature-grid">
+                        <div class="feature-item"><strong>数据提取模块</strong><span>支持图片OCR、语音转录、文本输入三种方式，AI智能识别并结构化提取临床数据，覆盖7大科室24套专业模板。</span></div>
+                        <div class="feature-item"><strong>统计分析模块</strong><span>对提取的结构化数据进行专业统计分析，支持从数据预处理到结果导出的完整分析流程。</span></div>
+                        <div class="feature-item"><strong>研究成果管理</strong><span>集中管理统计分析成果，支持搜索筛选、详情查看、字段编辑与批量导出。</span></div>
+                        <div class="feature-item"><strong>隐私安全保障</strong><span>所有数据本地处理存储，敏感信息自动脱敏后再进行AI分析，确保数据安全。</span></div>
+                    </div>
+                    <div class="tip-box">标准工作流：数据提取 &#8594; 统计分析 &#8594; 成果管理。您可以从首页快速导航至任意模块开始工作。</div>
+                </div>
+
+                <!-- Page 2: Data Extraction Module -->
+                <div class="guide-page" data-page="1">
+                    <h3>模块一：数据提取</h3>
+                    <p>数据提取模块是整个科研流程的起点，用于从医疗文档中智能提取结构化数据。</p>
+                    <h4>三种数据输入方式</h4>
+                    <ul>
+                        <li><strong>图片/PDF 上传：</strong>支持 JPG、PNG、BMP、TIFF、PDF 格式，可批量上传多个文件，系统通过 OCR 识别文档内容</li>
+                        <li><strong>语音上传：</strong>支持 WAV、MP3、M4A、AAC、FLAC 格式，系统自动转录语音内容后提取数据</li>
+                        <li><strong>文本输入：</strong>直接粘贴病历、检验报告等文本内容进行提取</li>
+                    </ul>
+                    <h4>定量研究与质性分析</h4>
+                    <p>模块内提供两种研究方法切换：</p>
+                    <ul>
+                        <li><strong>定量研究：</strong>结构化提取临床数据字段（如血压、心率、诊断等），适用于量化分析场景</li>
+                        <li><strong>质性分析：</strong>采用学术四步法（初始编码、主题聚类、代表性引用、层级化输出），适用于访谈/观察记录分析</li>
+                    </ul>
+                    <h4>字段预览功能</h4>
+                    <p>上传文件后，点击「预览可提取字段」按钮，系统会先分析文档内容，列出所有可识别的字段及其置信度。您可以勾选需要的字段后再执行提取。</p>
+                    <div class="tip-box">提取完成后，数据会自动保存至处理历史。您可以通过导航栏的「导出数据」按钮将数据导出为 Excel 文件。</div>
+                </div>
+
+                <!-- Page 3: 7 Department Templates -->
+                <div class="guide-page" data-page="2">
+                    <h3>7大科室专业模板</h3>
+                    <p>系统为每个临床科室提供针对性优化的提取模板，每个科室内置 4 套专属模板（诊疗记录、护理评估、科研数据、语音录入）。</p>
+                    <h4><span class="step-num">1</span>心内科</h4>
+                    <p>EF 值、BNP、冠脉造影、心功能分级 NYHA、PCI/CABG 等心血管核心字段。</p>
+                    <h4><span class="step-num">2</span>神经内科</h4>
+                    <p>GCS/NIHSS 评分、肌力分级、头颅 CT/MRI、溶栓/取栓记录等神经专科字段。</p>
+                    <h4><span class="step-num">3</span>外科</h4>
+                    <p>手术名称、ASA 分级、麻醉方式、术中出血量、引流管、病理结果等手术核心字段。</p>
+                    <h4><span class="step-num">4</span>儿科</h4>
+                    <p>出生体重、胎龄、生长发育百分位、疫苗接种、喂养方式等儿科特色字段。</p>
+                    <h4><span class="step-num">5</span>妇产科</h4>
+                    <p>孕周、GPAL、胎心率、羊水指数、分娩方式、Apgar 评分等产科核心字段。</p>
+                    <h4><span class="step-num">6</span>急诊科</h4>
+                    <p>分诊级别、MEWS/NEWS 评分、发病至就诊时间、急救措施、转归等急诊关键字段。</p>
+                    <h4><span class="step-num">7</span>通用</h4>
+                    <p>包含 12 套通用模板（门诊病历、住院记录、护理量表、科研数据等），适用于跨科室通用场景。</p>
+                    <div class="tip-box">在数据提取模块中，您也可以点击「自动识别」按钮，让 AI 根据文本内容自动推荐最匹配的科室。还支持通过「管理模板」创建自定义模板。</div>
+                </div>
+
+                <!-- Page 4: Qualitative Analysis -->
+                <div class="guide-page" data-page="3">
+                    <h3>质性分析模块操作指南</h3>
+                    <p>质性分析模块位于数据提取页面内，采用严格的学术四步法，适用于深度访谈、焦点小组和观察记录的系统化分析。</p>
+                    <h4>选择分析类型</h4>
+                    <ul>
+                        <li><strong>深度访谈分析：</strong>聚焦患者体验、疾病认知、治疗态度、心理感受</li>
+                        <li><strong>焦点小组分析：</strong>聚焦群体共识、争议点、互动模式、观点演变</li>
+                        <li><strong>观察记录分析：</strong>聚焦行为模式、环境因素、非语言信息、事件序列</li>
+                    </ul>
+                    <h4>四步分析法流程</h4>
+                    <p><span class="step-num">1</span><strong>初始编码（Open Coding）：</strong>逐句/段识别有意义概念，自动生成 8-20 个编码，每个编码标注来源段落和行号。</p>
+                    <p><span class="step-num">2</span><strong>主题聚类（Theme Clustering）：</strong>将编码归纳为 3-5 个主主题，每个主题包含若干子主题。</p>
+                    <p><span class="step-num">3</span><strong>代表性引用（Representative Quotes）：</strong>为每个主题选取 2-3 条最具代表性的原文引用。</p>
+                    <p><span class="step-num">4</span><strong>层级化输出（Hierarchical Output）：</strong>按「主题 - 子主题 - 编码 - 原话摘录」四级结构完整呈现。</p>
+                    <div class="tip-box">质性分析同样支持图片OCR、语音转录和文本输入三种数据源。分析结果以可折叠面板展示，点击每步标题可展开/收起。</div>
+                </div>
+
+                <!-- Page 5: Statistical Analysis Module -->
+                <div class="guide-page" data-page="4">
+                    <h3>模块二：统计分析</h3>
+                    <p>统计分析模块对提取的结构化数据进行专业统计分析，支持从数据预处理到结果导出的完整分析流程。</p>
+                    <h4>操作流程</h4>
+                    <ul>
+                        <li><span class="step-num">1</span>进入统计分析模块后，可从数据提取模块导入已提取的病历记录</li>
+                        <li><span class="step-num">2</span>选择需要的分析方法（描述统计、差异比较、回归分析等）</li>
+                        <li><span class="step-num">3</span>查看分析结果和可视化图表</li>
+                        <li><span class="step-num">4</span>通过「归档至成果」按钮将分析结果保存到研究成果管理</li>
+                    </ul>
+                    <h4>支持的分析方法</h4>
+                    <div class="feature-grid">
+                        <div class="feature-item"><strong>数据预处理</strong><span>变量编码、异常值检测、缺失值处理、数据标准化</span></div>
+                        <div class="feature-item"><strong>描述性分析</strong><span>频数分析、描述统计、交叉表与卡方检验</span></div>
+                        <div class="feature-item"><strong>差异比较</strong><span>独立样本t检验、方差分析、非参数检验</span></div>
+                        <div class="feature-item"><strong>回归分析</strong><span>Pearson/Spearman相关、线性回归、Logistic回归</span></div>
+                    </div>
+                    <h4>前提检验与可视化</h4>
+                    <ul>
+                        <li><strong>前提检验：</strong>正态性检验（Shapiro-Wilk）、方差齐性检验（Levene）</li>
+                        <li><strong>可视化图表：</strong>直方图、箱线图、散点图、折线图等 ECharts 交互式图表</li>
+                    </ul>
+                    <div class="tip-box">统计分析模块顶部提供「前往成果管理」按钮，可随时跳转到研究成果管理查看已归档的分析成果。</div>
+                </div>
+
+                <!-- Page 6: Research Results Management -->
+                <div class="guide-page" data-page="5">
+                    <h3>模块三：研究成果管理</h3>
+                    <p>研究成果管理模块集中管理所有统计分析成果，提供搜索、筛选、编辑和导出功能。</p>
+                    <h4>核心功能</h4>
+                    <ul>
+                        <li><strong>成果列表：</strong>显示成果ID、名称、数据类型、所属科室、操作时间等信息</li>
+                        <li><strong>搜索与筛选：</strong>支持关键字检索、按科室筛选、按数据类型筛选</li>
+                        <li><strong>在线编辑：</strong>直接在表格中点击编辑成果名称、数据类型（支持多选）、所属科室（支持多选）</li>
+                        <li><strong>详情查看：</strong>点击「查看详情」展开右侧面板，查看基础信息、核心指标、分析结论</li>
+                        <li><strong>备注管理：</strong>为每条成果添加备注，设置状态（待复核/已归档/作废）</li>
+                        <li><strong>数据导出：</strong>支持单条导出和批量导出为 Excel 文件</li>
+                    </ul>
+                    <h4>工作流衔接</h4>
+                    <p>在统计分析模块中完成分析后，点击「归档至成果」即可将分析结果自动归档到此模块。也可以在此模块的顶部导航直接跳转到数据提取或统计分析模块。</p>
+                    <div class="tip-box">成果表格中的「名称」字段支持自由文本编辑，「数据类型」和「所属科室」支持下拉多选。点击对应单元格即可编辑。</div>
+                </div>
+
+                <!-- Page 7: Complete Workflow -->
+                <div class="guide-page" data-page="6">
+                    <h3>完整工作流程</h3>
+                    <p>MedSnap 的三大模块构成完整的科研数据处理流水线：</p>
+                    <h4><span class="step-num">1</span>数据提取（起点）</h4>
+                    <p>在数据提取模块中，选择对应科室和模板，上传病历图片/语音/文本，AI 自动识别并结构化提取临床数据。提取结果保存在处理历史中，可导出为 Excel。</p>
+                    <h4><span class="step-num">2</span>统计分析（中间环节）</h4>
+                    <p>在统计分析模块中，导入已提取的数据，选择合适的统计方法进行分析。分析完成后，点击「归档至成果」将结果保存。</p>
+                    <h4><span class="step-num">3</span>成果管理（终点）</h4>
+                    <p>在研究成果管理模块中，查看、编辑和管理所有归档的研究成果。支持搜索筛选、添加备注、批量导出。</p>
+                    <h4>模块间快速跳转</h4>
+                    <ul>
+                        <li>每个模块页面的顶部导航栏都提供跳转按钮，可在三大模块之间快速切换</li>
+                        <li>首页（当前页面）提供三大模块的入口卡片和快速开始按钮</li>
+                        <li>数据提取模块底部的「使用指南」链接可打开模块内的详细指南</li>
+                    </ul>
+                    <div class="tip-box">建议按照「数据提取 &#8594; 统计分析 &#8594; 成果管理」的顺序使用，以获得最完整的科研工作流体验。</div>
+                </div>
+
+                <!-- Page 8: FAQ & Best Practices -->
+                <div class="guide-page" data-page="7">
+                    <h3>常见问题与最佳实践</h3>
+                    <h4>常见问题</h4>
+                    <p><strong>Q：如何选择正确的科室？</strong><br>A：在数据提取模块中手动选择下拉菜单，或先粘贴文本后点击「自动识别」让 AI 推荐最匹配的科室。</p>
+                    <p><strong>Q：支持哪些文件格式？</strong><br>A：图片支持 JPG/PNG/BMP/TIFF/PDF，语音支持 WAV/MP3/M4A/AAC/FLAC。建议使用清晰的扫描件（不低于300dpi）和安静环境录音。</p>
+                    <p><strong>Q：通用科室和专科有什么区别？</strong><br>A：6 个专科各有针对性优化的提取字段和 AI Prompt，识别准确率更高。通用科室保留 12 套通用模板，适用于跨科室场景。</p>
+                    <p><strong>Q：数据安全如何保障？</strong><br>A：所有数据均在本地处理和存储，敏感信息（身份证号、手机号、姓名等）在 AI 分析前自动脱敏。</p>
+                    <p><strong>Q：如何编辑研究成果信息？</strong><br>A：在研究成果管理表格中，直接点击「名称」「数据类型」「所属科室」单元格即可在线编辑。</p>
+                    <h4>最佳实践</h4>
+                    <ul>
+                        <li>优先使用对应专科模板，提取准确率显著高于通用模板</li>
+                        <li>上传图片前确保文档方向正确、文字清晰、无大面积遮挡</li>
+                        <li>利用字段预览功能可在正式提取前评估文档识别质量</li>
+                        <li>质性分析建议输入不少于 200 字的文本以获得有意义的编码结果</li>
+                        <li>定期导出数据备份，避免数据丢失</li>
+                        <li>统计分析完成后及时归档到成果管理，方便后续查阅</li>
+                    </ul>
+                    <div class="tip-box">您可以随时点击页面底部的「使用指南」链接或首页的「使用教程」按钮重新打开本指南。</div>
+                </div>
+
+            </div>
+            <div class="guide-footer">
+                <span class="page-info" id="guidePageInfo">1 / 8</span>
+                <div class="guide-btns">
+                    <button class="guide-btn-prev" id="guidePrevBtn" onclick="guideNav(-1)">上一页</button>
+                    <button class="guide-btn-next" id="guideNextBtn" onclick="guideNav(1)">下一页</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    var guideCurrentPage = 0;
+    var guideTotalPages = 8;
+
+    function showGuide() {
+        guideCurrentPage = 0;
+        renderGuideDots();
+        showGuidePage(0);
+        document.getElementById('guideOverlay').classList.remove('hidden');
+    }
+    function closeGuide() {
+        document.getElementById('guideOverlay').classList.add('hidden');
+    }
+    function renderGuideDots() {
+        var html = '';
+        for (var i = 0; i < guideTotalPages; i++) {
+            html += '<span class="guide-dot' + (i === guideCurrentPage ? ' active' : '') + '" onclick="showGuidePage(' + i + ')"></span>';
+        }
+        document.getElementById('guideDots').innerHTML = html;
+    }
+    function showGuidePage(idx) {
+        guideCurrentPage = idx;
+        document.querySelectorAll('.guide-page').forEach(function(p, i) {
+            p.classList.toggle('active', i === idx);
+        });
+        document.getElementById('guidePageInfo').textContent = (idx + 1) + ' / ' + guideTotalPages;
+        document.getElementById('guidePrevBtn').style.visibility = idx === 0 ? 'hidden' : 'visible';
+        var nextBtn = document.getElementById('guideNextBtn');
+        if (idx === guideTotalPages - 1) {
+            nextBtn.textContent = '完成';
+            nextBtn.onclick = function() { closeGuide(); };
+        } else {
+            nextBtn.textContent = '下一页';
+            nextBtn.onclick = function() { guideNav(1); };
+        }
+        renderGuideDots();
+    }
+    function guideNav(dir) {
+        var next = guideCurrentPage + dir;
+        if (next >= 0 && next < guideTotalPages) showGuidePage(next);
+    }
+    </script>
+
+</body>
+</html>
