@@ -1,2 +1,1 @@
-"# Medsnap-vercel" 
-"# Medsnap-vercel" 
+# Medsnap-vercel
